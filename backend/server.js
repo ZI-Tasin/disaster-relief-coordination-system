@@ -12,16 +12,22 @@ const app = express();
 ===================================================== */
 
 const authRoutes = require("./routes/authRoutes");
-const userRoutes = require("./routes/userRoutes");
-const disasterRoutes = require("./routes/disasterRoutes");
 const volunteerRoutes = require("./routes/volunteerRoutes");
 const donationRoutes = require("./routes/donationRoutes");
-const adminRoutes = require("./routes/adminRoutes");
 
+const campaignRoutes = require("./routes/campaignRoutes");
+const campaignAnalyticsRoutes = require("./routes/campaignAnalyticsRoutes");
+
+const fundAllocationRoutes = require("./routes/fundAllocationRoutes");
+const locationRoutes = require("./routes/locationRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+const shelterRoutes = require("./routes/shelterRoutes");
 const smsRoutes = require("./routes/smsRoutes");
 const stageRoutes = require("./routes/stageRoutes");
-const campaignAnalyticsRoutes = require("./routes/campaignAnalyticsRoutes");
+const thresholdRoutes = require("./routes/thresholdroutes");
+const weatherRoutes = require("./routes/weatherRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 
 /* =====================================================
    SERVER CONFIG
@@ -42,13 +48,13 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
 
-  // Vercel production domain
+  // Vercel production
   "https://disaster-relief-coordination-system.vercel.app",
 
-  // Vercel Git/production domain
+  // Vercel Git / production
   "https://disaster-relief-coordination-system-git-main-tasin7.vercel.app",
 
-  // Vercel deployment domains
+  // Vercel deployments
   "https://disaster-relief-coordination-system-five.vercel.app",
   "https://disaster-relief-coordination-system-7q4h91fe6-tasin7.vercel.app",
   "https://disaster-relief-coordination-system-bdvrdarga-tasin7.vercel.app",
@@ -56,8 +62,8 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests without an Origin header.
-    // Useful for Postman, curl, server-to-server requests, etc.
+    // Allow requests without Origin
+    // e.g. curl, Postman, server-to-server
     if (!origin) {
       return callback(null, true);
     }
@@ -68,7 +74,7 @@ const corsOptions = {
 
     console.log("CORS blocked:", origin);
 
-    // Do not crash the server because of CORS.
+    // Don't crash the application because of CORS.
     return callback(null, false);
   },
 
@@ -87,24 +93,23 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
+/* =====================================================
+   EXPRESS 5 CORS FIX
+===================================================== */
+
 /*
- * =====================================================
- * EXPRESS 5 CORS FIX
- * =====================================================
+ * IMPORTANT:
  *
- * DO NOT use:
+ * Express 5 does NOT accept:
  *
  * app.options("*", cors());
  *
- * Express 5 uses a newer path-to-regexp version
- * which rejects an unnamed "*" wildcard.
+ * This caused:
  *
- * This was causing:
- *
- * PathError [TypeError]:
+ * PathError:
  * Missing parameter name at index 1: *
  *
- * A regular expression safely matches all paths.
+ * Use a RegExp instead.
  */
 
 app.use(cors(corsOptions));
@@ -116,10 +121,10 @@ app.options(/.*/, cors(corsOptions));
 ===================================================== */
 
 /*
- * Stripe requires the raw request body for webhook
- * signature verification.
+ * Stripe needs the raw request body for
+ * webhook signature verification.
  *
- * This must be registered BEFORE express.json().
+ * This MUST be before express.json().
  */
 
 app.use(
@@ -133,7 +138,11 @@ app.use(
    BODY PARSING
 ===================================================== */
 
-app.use(express.json({ limit: "10mb" }));
+app.use(
+  express.json({
+    limit: "10mb",
+  }),
+);
 
 app.use(
   express.urlencoded({
@@ -180,23 +189,33 @@ app.get("/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 
-app.use("/api/users", userRoutes);
-
-app.use("/api/disasters", disasterRoutes);
-
 app.use("/api/volunteers", volunteerRoutes);
 
 app.use("/api/donations", donationRoutes);
 
-app.use("/api/admin", adminRoutes);
+app.use("/api/campaigns", campaignRoutes);
+
+app.use("/api/campaign-analytics", campaignAnalyticsRoutes);
+
+app.use("/api/fund-allocations", fundAllocationRoutes);
+
+app.use("/api/locations", locationRoutes);
 
 app.use("/api/notifications", notificationRoutes);
+
+app.use("/api/reports", reportRoutes);
+
+app.use("/api/shelters", shelterRoutes);
 
 app.use("/api/sms", smsRoutes);
 
 app.use("/api/stage-updates", stageRoutes);
 
-app.use("/api/campaign-analytics", campaignAnalyticsRoutes);
+app.use("/api/thresholds", thresholdRoutes);
+
+app.use("/api/weather", weatherRoutes);
+
+app.use("/api/analytics", analyticsRoutes);
 
 /* =====================================================
    404 HANDLER
@@ -215,7 +234,12 @@ app.use((req, res) => {
 ===================================================== */
 
 app.use((err, req, res, next) => {
-  console.error("Server error:", err);
+  console.error("========================================");
+  console.error("SERVER ERROR");
+  console.error("========================================");
+  console.error("Name:", err.name);
+  console.error("Message:", err.message);
+  console.error(err);
 
   res.status(err.status || 500).json({
     success: false,
@@ -229,19 +253,31 @@ app.use((err, req, res, next) => {
 
 async function connectDB() {
   try {
+    console.log("🔄 Checking MongoDB configuration...");
+
     if (!process.env.MONGO_URI) {
-      console.error("❌ MONGO_URI is not defined");
-      process.exit(1);
+      throw new Error("MONGO_URI is not defined in environment variables");
     }
 
-    await mongoose.connect(process.env.MONGO_URI);
+    console.log("🔄 Connecting to MongoDB...");
+
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 15000,
+    });
 
     console.log("✅ MongoDB connected successfully");
   } catch (error) {
-    console.error("❌ MongoDB connection error:");
+    console.error("========================================");
+
+    console.error("❌ MONGODB CONNECTION FAILED");
+
+    console.error("========================================");
+
+    console.error("Name:", error.name);
+    console.error("Message:", error.message);
     console.error(error);
 
-    process.exit(1);
+    throw error;
   }
 }
 
@@ -258,9 +294,10 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
       process.env.TWILIO_AUTH_TOKEN,
     );
 
-    console.log("✅ Twilio loaded successfully - Production mode");
+    console.log("✅ Twilio initialized successfully");
   } catch (error) {
-    console.error("❌ Twilio initialization failed:");
+    console.error("⚠️ Twilio initialization failed:");
+
     console.error(error.message);
   }
 } else {
@@ -273,20 +310,56 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
 
 async function startServer() {
   try {
+    console.log("========================================");
+
+    console.log("🚀 Starting Disaster Relief API");
+
+    console.log("========================================");
+
+    console.log("Node version:", process.version);
+
+    console.log("Environment:", process.env.NODE_ENV || "development");
+
+    console.log("Port:", PORT);
+
     await connectDB();
 
-    app.listen(PORT, "0.0.0.0", () => {
+    const server = app.listen(PORT, "0.0.0.0", () => {
       console.log("========================================");
-      console.log("🚀 Server started successfully");
+
+      console.log("✅ SERVER STARTED SUCCESSFULLY");
+
+      console.log("========================================");
+
       console.log(`📡 Port: ${PORT}`);
+
       console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+
       console.log(`🔗 Frontend: ${FRONTEND_URL}`);
-      console.log(`❤️ Health: http://localhost:${PORT}/health`);
+
+      console.log(`❤️ Health: /health`);
+
       console.log("========================================");
     });
+
+    server.on("error", (error) => {
+      console.error("❌ HTTP SERVER ERROR");
+
+      console.error(error);
+    });
   } catch (error) {
-    console.error("❌ Failed to start server:");
+    console.error("========================================");
+
+    console.error("❌ SERVER STARTUP FAILED");
+
+    console.error("========================================");
+
+    console.error("Name:", error.name);
+
+    console.error("Message:", error.message);
+
     console.error(error);
+
     process.exit(1);
   }
 }
@@ -297,36 +370,26 @@ startServer();
    GRACEFUL SHUTDOWN
 ===================================================== */
 
-process.on("SIGTERM", async () => {
-  console.log("SIGTERM received. Shutting down gracefully...");
+async function shutdown(signal) {
+  console.log(`${signal} received. Shutting down...`);
 
   try {
     await mongoose.connection.close();
 
-    console.log("MongoDB connection closed");
-
-    process.exit(0);
+    console.log("✅ MongoDB connection closed");
   } catch (error) {
-    console.error("Shutdown error:", error);
-
-    process.exit(1);
+    console.error("❌ MongoDB shutdown error:", error.message);
   }
+
+  process.exit(0);
+}
+
+process.on("SIGTERM", () => {
+  shutdown("SIGTERM");
 });
 
-process.on("SIGINT", async () => {
-  console.log("SIGINT received. Shutting down gracefully...");
-
-  try {
-    await mongoose.connection.close();
-
-    console.log("MongoDB connection closed");
-
-    process.exit(0);
-  } catch (error) {
-    console.error("Shutdown error:", error);
-
-    process.exit(1);
-  }
+process.on("SIGINT", () => {
+  shutdown("SIGINT");
 });
 
 module.exports = app;
