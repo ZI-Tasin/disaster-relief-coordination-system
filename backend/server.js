@@ -36,45 +36,67 @@ const analyticsRoutes = require("./routes/analyticsRoutes");
 const PORT = process.env.PORT || 8000;
 
 /* =====================================================
-   CORS
+   FRONTEND / CORS CONFIG
 ===================================================== */
 
 const FRONTEND_URL =
   process.env.FRONTEND_URL || process.env.CLIENT_URL || "http://localhost:5173";
 
+/*
+ * IMPORTANT:
+ * Your current Vercel frontend is:
+ *
+ * https://disaster-relief-coordination-system-beta.vercel.app
+ */
+
 const allowedOrigins = [
+  // Environment variable
   FRONTEND_URL,
 
+  // Local development
   "http://localhost:5173",
   "http://localhost:3000",
 
-  // Vercel production
+  // CURRENT VERCEL FRONTEND
+  "https://disaster-relief-coordination-system-beta.vercel.app",
+
+  // Other Vercel deployments
   "https://disaster-relief-coordination-system.vercel.app",
-
-  // Vercel Git / production
-  "https://disaster-relief-coordination-system-git-main-tasin7.vercel.app",
-
-  // Vercel deployments
   "https://disaster-relief-coordination-system-five.vercel.app",
+  "https://disaster-relief-coordination-system-git-main-tasin7.vercel.app",
   "https://disaster-relief-coordination-system-7q4h91fe6-tasin7.vercel.app",
   "https://disaster-relief-coordination-system-bdvrdarga-tasin7.vercel.app",
 ].filter(Boolean);
 
+/* =====================================================
+   CORS OPTIONS
+===================================================== */
+
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests without Origin
-    // e.g. curl, Postman, server-to-server
+    /*
+     * Requests without Origin:
+     * curl
+     * Postman
+     * server-to-server
+     */
     if (!origin) {
       return callback(null, true);
     }
 
+    /*
+     * Allowed frontend
+     */
     if (allowedOrigins.includes(origin)) {
+      console.log("CORS allowed:", origin);
       return callback(null, true);
     }
 
+    /*
+     * Don't crash the server because of CORS.
+     */
     console.log("CORS blocked:", origin);
 
-    // Don't crash the application because of CORS.
     return callback(null, false);
   },
 
@@ -90,29 +112,28 @@ const corsOptions = {
     "Authorization",
   ],
 
+  exposedHeaders: ["Content-Length", "Content-Type"],
+
   optionsSuccessStatus: 204,
 };
 
 /* =====================================================
-   EXPRESS 5 CORS FIX
+   CORS MIDDLEWARE
 ===================================================== */
 
+app.use(cors(corsOptions));
+
 /*
- * IMPORTANT:
+ * EXPRESS 5 FIX
  *
- * Express 5 does NOT accept:
+ * DO NOT use:
  *
  * app.options("*", cors());
  *
- * This caused:
+ * Express 5 + path-to-regexp rejects "*".
  *
- * PathError:
- * Missing parameter name at index 1: *
- *
- * Use a RegExp instead.
+ * RegExp works correctly.
  */
-
-app.use(cors(corsOptions));
 
 app.options(/.*/, cors(corsOptions));
 
@@ -121,10 +142,9 @@ app.options(/.*/, cors(corsOptions));
 ===================================================== */
 
 /*
- * Stripe needs the raw request body for
- * webhook signature verification.
+ * Stripe requires the RAW request body.
  *
- * This MUST be before express.json().
+ * This MUST come before express.json().
  */
 
 app.use(
@@ -156,12 +176,13 @@ app.use(
 ===================================================== */
 
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.originalUrl}`);
+  console.log(`${new Date().toISOString()} ${req.method} ${req.originalUrl}`);
+
   next();
 });
 
 /* =====================================================
-   HEALTH CHECK
+   ROOT
 ===================================================== */
 
 app.get("/", (req, res) => {
@@ -169,16 +190,36 @@ app.get("/", (req, res) => {
     success: true,
     message: "Disaster Relief Coordination System API is running",
     status: "online",
+    environment: process.env.NODE_ENV || "development",
     timestamp: new Date().toISOString(),
   });
 });
+
+/* =====================================================
+   HEALTH CHECK
+===================================================== */
 
 app.get("/health", (req, res) => {
   res.status(200).json({
     success: true,
     status: "healthy",
+
     database:
       mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/* =====================================================
+   CORS TEST
+===================================================== */
+
+app.get("/api/cors-test", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "CORS is working correctly",
+    origin: req.headers.origin || null,
     timestamp: new Date().toISOString(),
   });
 });
@@ -225,6 +266,7 @@ app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: "Route not found",
+    method: req.method,
     path: req.originalUrl,
   });
 });
@@ -235,11 +277,26 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
   console.error("========================================");
+
   console.error("SERVER ERROR");
+
   console.error("========================================");
+
   console.error("Name:", err.name);
+
   console.error("Message:", err.message);
-  console.error(err);
+
+  console.error("Stack:", err.stack);
+
+  /*
+   * CORS error
+   */
+  if (err.message === "Not allowed by CORS") {
+    return res.status(403).json({
+      success: false,
+      message: "CORS policy blocked this request",
+    });
+  }
 
   res.status(err.status || 500).json({
     success: false,
@@ -253,28 +310,32 @@ app.use((err, req, res, next) => {
 
 async function connectDB() {
   try {
-    console.log("🔄 Checking MongoDB configuration...");
+    console.log("Checking MongoDB configuration...");
 
     if (!process.env.MONGO_URI) {
-      throw new Error("MONGO_URI is not defined in environment variables");
+      throw new Error(
+        "MONGO_URI is not defined in Render Environment Variables",
+      );
     }
 
-    console.log("🔄 Connecting to MongoDB...");
+    console.log("Connecting to MongoDB...");
 
     await mongoose.connect(process.env.MONGO_URI, {
       serverSelectionTimeoutMS: 15000,
     });
 
-    console.log("✅ MongoDB connected successfully");
+    console.log("MongoDB connected successfully");
   } catch (error) {
     console.error("========================================");
 
-    console.error("❌ MONGODB CONNECTION FAILED");
+    console.error("MONGODB CONNECTION FAILED");
 
     console.error("========================================");
 
     console.error("Name:", error.name);
+
     console.error("Message:", error.message);
+
     console.error(error);
 
     throw error;
@@ -294,14 +355,14 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
       process.env.TWILIO_AUTH_TOKEN,
     );
 
-    console.log("✅ Twilio initialized successfully");
+    console.log("Twilio loaded successfully - Production mode");
   } catch (error) {
-    console.error("⚠️ Twilio initialization failed:");
+    console.error("Twilio initialization failed:");
 
     console.error(error.message);
   }
 } else {
-  console.log("⚠️ Twilio credentials not configured");
+  console.log("Twilio credentials not configured");
 }
 
 /* =====================================================
@@ -312,7 +373,7 @@ async function startServer() {
   try {
     console.log("========================================");
 
-    console.log("🚀 Starting Disaster Relief API");
+    console.log("Starting Disaster Relief API");
 
     console.log("========================================");
 
@@ -322,35 +383,45 @@ async function startServer() {
 
     console.log("Port:", PORT);
 
+    console.log("Frontend URL:", FRONTEND_URL);
+
+    console.log("Allowed origins:");
+
+    allowedOrigins.forEach((origin) => {
+      console.log(" -", origin);
+    });
+
     await connectDB();
 
     const server = app.listen(PORT, "0.0.0.0", () => {
       console.log("========================================");
 
-      console.log("✅ SERVER STARTED SUCCESSFULLY");
+      console.log("SERVER STARTED SUCCESSFULLY");
 
       console.log("========================================");
 
-      console.log(`📡 Port: ${PORT}`);
+      console.log(`Port: ${PORT}`);
 
-      console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
 
-      console.log(`🔗 Frontend: ${FRONTEND_URL}`);
+      console.log(`Frontend: ${FRONTEND_URL}`);
 
-      console.log(`❤️ Health: /health`);
+      console.log(`Health: /health`);
+
+      console.log(`CORS Test: /api/cors-test`);
 
       console.log("========================================");
     });
 
     server.on("error", (error) => {
-      console.error("❌ HTTP SERVER ERROR");
+      console.error("HTTP SERVER ERROR");
 
       console.error(error);
     });
   } catch (error) {
     console.error("========================================");
 
-    console.error("❌ SERVER STARTUP FAILED");
+    console.error("SERVER STARTUP FAILED");
 
     console.error("========================================");
 
@@ -376,9 +447,9 @@ async function shutdown(signal) {
   try {
     await mongoose.connection.close();
 
-    console.log("✅ MongoDB connection closed");
+    console.log("MongoDB connection closed");
   } catch (error) {
-    console.error("❌ MongoDB shutdown error:", error.message);
+    console.error("MongoDB shutdown error:", error.message);
   }
 
   process.exit(0);
@@ -391,5 +462,9 @@ process.on("SIGTERM", () => {
 process.on("SIGINT", () => {
   shutdown("SIGINT");
 });
+
+/* =====================================================
+   EXPORT
+===================================================== */
 
 module.exports = app;
