@@ -78,6 +78,33 @@ const notificationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
+
+    // =========================================================
+    // FEATURE 3: Email logs for donor thank-you emails
+    // =========================================================
+    emailLog: [
+      {
+        donorEmail: {
+          type: String,
+          required: true,
+        },
+        donationId: {
+          type: String,
+        },
+        status: {
+          type: String,
+          enum: ["sent", "failed", "pending"],
+          default: "pending",
+        },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+        errorMessage: {
+          type: String,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
