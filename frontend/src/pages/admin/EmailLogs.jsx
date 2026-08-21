@@ -11,7 +11,7 @@ const EmailLogs = () => {
 
   const API_URL =
     import.meta.env.VITE_API_URL ||
-    "https://disaster-relief-coordination-system-0z00.onrender.com/api";
+    "https://disaster-relief-coordination-system-2.onrender.com/api";
 
   useEffect(() => {
     fetchLogs();
