@@ -5,7 +5,7 @@ import AdminSidebar from "../components/AdminSidebar";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  "https://disaster-relief-coordination-system-2.onrender.com";
+  "https://disaster-relief-coordination-system-0z00.onrender.com";
 
 export default function CampaignAnalytics() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
