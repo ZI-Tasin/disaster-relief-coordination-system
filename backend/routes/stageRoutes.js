@@ -1,14 +1,28 @@
 const router = require("express").Router();
-const { protect: auth } = require("../middleware/authMiddleware");
+
+const { protect } = require("../middleware/authMiddleware");
 const admin = require("../middleware/adminMiddleware");
-const c = require("../controllers/stageController");
 
-// NEW: GET all stage updates (or feed)
-router.get("/", auth, admin, c.getFeed);
+const {
+  getFeed,
+  getMyMission,
+  submitStage,
+  getHistory,
+} = require("../controllers/stageController");
 
-router.get("/mine", auth, c.getMyMission);
-router.post("/", auth, c.submitStage);
-router.get("/feed", auth, admin, c.getFeed);
-router.get("/history", auth, c.getHistory);
+// Admin dashboard
+router.get("/", protect, admin, getFeed);
+
+// Volunteer mission
+router.get("/mine", protect, getMyMission);
+
+// Volunteer history
+router.get("/history", protect, getHistory);
+
+// Submit stage
+router.post("/", protect, submitStage);
+
+// Admin feed alias
+router.get("/feed", protect, admin, getFeed);
 
 module.exports = router;
