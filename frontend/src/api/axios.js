@@ -1,12 +1,8 @@
 import axios from "axios";
-
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://disaster-relief-coordination-system-0z00.onrender.com/api";
+import { API_URL } from "../config/api";
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -14,7 +10,9 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("authToken");
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -22,25 +20,21 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error)
 );
 
 api.interceptors.response.use(
   (response) => response,
-
   (error) => {
-    if (error.code === "ECONNABORTED") {
-      console.error("API request timed out.");
-    }
-
-    if (!error.response) {
-      console.error("Cannot connect to backend:", error.message);
+    if (error.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("user");
     }
 
     return Promise.reject(error);
-  },
+  }
 );
 
 export default api;

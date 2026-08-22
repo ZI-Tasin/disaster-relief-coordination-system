@@ -1,189 +1,87 @@
-require("dotenv").config();
-
 const express = require("express");
 const cors = require("cors");
-const mongoose = require("mongoose");
+const dotenv = require("dotenv");
 
-const fundAllocationRoutes = require("./routes/fundAllocationRoutes");
+dotenv.config();
+
+const connectDB = require("./config/db");
+
+const authRoutes = require("./routes/authRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+const campaignRoutes = require("./routes/campaignRoutes");
+const donationRoutes = require("./routes/donationRoutes");
+const volunteerRoutes = require("./routes/volunteerRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const smsRoutes = require("./routes/smsRoutes");
+const stageRoutes = require("./routes/stageRoutes");
 
 const app = express();
 
-// =====================================================
-// SERVER CONFIG
-// =====================================================
+connectDB();
 
-const PORT = process.env.PORT || 8000;
-
-// =====================================================
-// CORS
-// =====================================================
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = [
   "http://localhost:5173",
-
-  // Vercel production domain
+  "http://localhost:3000",
   "https://disaster-relief-coordination-system.vercel.app",
-
-  // Vercel Git/production domain
-  "https://disaster-relief-coordination-system-git-main-tasin7.vercel.app",
-
-  // Vercel deployment domains
-  "https://disaster-relief-coordination-system-five.vercel.app",
-  "https://disaster-relief-coordination-system-7q4h91fe6-tasin7.vercel.app",
-  "https://disaster-relief-coordination-system-bdvrdarga-tasin7.vercel.app",
+  "https://disaster-relief-coordination-system-beta.vercel.app",
 ];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Allow requests such as Postman/server-to-server requests
-      if (!origin) {
-        return callback(null, true);
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
       }
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      console.log("CORS blocked:", origin);
-
-      return callback(null, false);
     },
-
     credentials: true,
-
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-
-    allowedHeaders: [
-      "Origin",
-      "X-Requested-With",
-      "Content-Type",
-      "Accept",
-      "Authorization",
-    ],
   }),
 );
 
-// Explicitly handle CORS preflight requests
-app.options("*", cors());
-
-// =====================================================
-// HEALTH CHECK
-// =====================================================
-
 app.get("/", (req, res) => {
-  res.status(200).json({
+  res.json({
     success: true,
-    message: "Disaster Relief Coordination System API is running",
-    status: "online",
-    timestamp: new Date().toISOString(),
+    message: "Disaster Relief Coordination API Running",
   });
 });
 
 app.get("/health", (req, res) => {
-  res.status(200).json({
+  res.json({
     success: true,
     status: "healthy",
-    timestamp: new Date().toISOString(),
+    database: "connected",
+    timestamp: new Date(),
   });
 });
 
-// =====================================================
-// STRIPE WEBHOOK
-// =====================================================
-
-// Stripe requires the raw request body.
-app.use(
-  "/api/donations/webhook",
-  express.raw({
-    type: "application/json",
-  }),
-);
-
-// =====================================================
-// JSON BODY
-// =====================================================
-
-app.use(express.json());
-
-// =====================================================
-// API ROUTES
-// =====================================================
-
-app.use("/api/reports", require("./routes/reportRoutes"));
-
-app.use("/api/volunteers", require("./routes/volunteerRoutes"));
-
-app.use("/api/thresholds", require("./routes/thresholdroutes"));
-
-app.use("/api/locations", require("./routes/locationRoutes"));
-
-app.use("/api/shelters", require("./routes/shelterRoutes"));
-
-app.use("/api/analytics", require("./routes/analyticsRoutes"));
-
-app.use("/api/weather", require("./routes/weatherRoutes"));
-
-app.use("/api/auth", require("./routes/authRoutes"));
-
-app.use("/api/campaigns", require("./routes/campaignRoutes"));
-
-app.use("/api/donations", require("./routes/donationRoutes"));
-
-app.use("/api/fund-allocations", fundAllocationRoutes);
-
-app.use("/api/notifications", require("./routes/notificationRoutes"));
-
+app.use("/api/auth", authRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/campaigns", campaignRoutes);
+app.use("/api/donations", donationRoutes);
+app.use("/api/volunteers", volunteerRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/sms", smsRoutes);
 
-app.use("/api/stage-updates", require("./routes/stageRoutes"));
-
-app.use("/api/campaign-analytics", require("./routes/campaignAnalyticsRoutes"));
-
-// =====================================================
-// 404 HANDLER
-// =====================================================
+// MODULE 3
+app.use("/api/stage-updates", stageRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: "Route not found",
+    method: req.method,
     path: req.originalUrl,
   });
 });
 
-// =====================================================
-// ERROR HANDLER
-// =====================================================
+const PORT = process.env.PORT || 10000;
 
-app.use((err, req, res, next) => {
-  console.error("Server error:", err);
-
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || "Internal server error",
-  });
+app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
 });
-
-// =====================================================
-// DATABASE + SERVER
-// =====================================================
-
-async function startServer() {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-
-    console.log("MongoDB connected successfully");
-
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Health check: http://localhost:${PORT}/health`);
-    });
-  } catch (error) {
-    console.error("Database connection error:", error);
-    process.exit(1);
-  }
-}
-
-startServer();
