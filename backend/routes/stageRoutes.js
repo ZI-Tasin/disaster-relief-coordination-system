@@ -3,9 +3,12 @@ const { protect: auth } = require("../middleware/authMiddleware");
 const admin = require("../middleware/adminMiddleware");
 const c = require("../controllers/stageController");
 
-router.get("/mine", auth, c.getMyMission); // my active mission + its history
-router.post("/", auth, c.submitStage); // log the next sequential stage
-router.get("/feed", auth, admin, c.getFeed); // admin consolidated feed
-router.get("/history", auth, c.getHistory); // volunteer's completed missions
+// NEW: GET all stage updates (or feed)
+router.get("/", auth, admin, c.getFeed);
+
+router.get("/mine", auth, c.getMyMission);
+router.post("/", auth, c.submitStage);
+router.get("/feed", auth, admin, c.getFeed);
+router.get("/history", auth, c.getHistory);
 
 module.exports = router;
