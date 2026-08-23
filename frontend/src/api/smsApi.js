@@ -2,7 +2,7 @@ import axios from "axios";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  "https://disaster-relief-coordination-system-0z00.onrender.com/api/sms";
+  "https://disaster-relief-coordination-system-kmf2.onrender.com/api/sms";
 
 const api = axios.create({
   baseURL: API_URL,

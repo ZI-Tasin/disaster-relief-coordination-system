@@ -19,7 +19,7 @@ const LocationSelector = ({
         let response;
         try {
           response = await axios.get(
-            "https://disaster-relief-coordination-system-0z00.onrender.com/api/locations/tree",
+            "https://disaster-relief-coordination-system-kmf2.onrender.com/api/locations/tree",
           );
         } catch (e) {
           response = await axios.get("/api/locations/tree");

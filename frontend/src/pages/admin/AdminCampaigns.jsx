@@ -10,15 +10,12 @@ export default function AdminCampaigns() {
   const navigate = useNavigate();
 
   const [campaigns, setCampaigns] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fetchCampaigns = async () => {
     try {
       const response = await getCampaigns();
-
       setCampaigns(response.data);
     } catch (error) {
       console.error("Failed to load campaigns", error);
@@ -43,7 +40,7 @@ export default function AdminCampaigns() {
 
       await deleteCampaign(id, token);
 
-      setCampaigns(campaigns.filter((campaign) => campaign._id !== id));
+      setCampaigns((prev) => prev.filter((campaign) => campaign._id !== id));
     } catch (error) {
       console.error("Delete failed", error);
     }
@@ -51,204 +48,406 @@ export default function AdminCampaigns() {
 
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
-      <Navbar setSidebarOpen={setSidebarOpen} />
+      {/* =====================================================
+          FIXED NAVBAR
+      ===================================================== */}
 
-      <div className="flex min-h-screen">
-        <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+      <div className="fixed left-0 right-0 top-0 z-[60]">
+        <Navbar setSidebarOpen={setSidebarOpen} />
+      </div>
 
-        <main
-          className="
-          flex-1
-          p-4
-          sm:p-6
-          lg:p-8
-          "
-        >
-          {/* Mobile Menu Button */}
+      {/* =====================================================
+          FIXED SIDEBAR
+      ===================================================== */}
 
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="
-            mb-5
-            rounded-xl
-            bg-[#30475E]
-            px-4
-            py-2
-            text-white
-            md:hidden
-            "
-          >
-            ☰ Menu
-          </button>
+      <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
 
-          <div
-            className="
-            flex
-            flex-col
-            gap-4
-            sm:flex-row
-            sm:items-center
-            sm:justify-between
-            "
-          >
-            <div>
-              <h1
-                className="
-                text-3xl
-                font-bold
-                text-[#222831]
-                "
-              >
-                Manage Campaigns
-              </h1>
+      {/* =====================================================
+          MAIN DASHBOARD
+          - below navbar
+          - beside sidebar on desktop
+      ===================================================== */}
 
-              <p className="mt-2 text-gray-500">
-                Create and manage relief campaigns
-              </p>
-            </div>
+      <main
+        className="
+          min-h-screen
+          pt-[64px]
+          md:ml-64
+        "
+      >
+        <div className="w-full px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="mx-auto w-full max-w-7xl">
+            {/* =================================================
+                MOBILE MENU
+            ================================================= */}
 
             <button
-              onClick={() => navigate("/admin/campaigns/create")}
+              type="button"
+              onClick={() => setSidebarOpen(true)}
               className="
-              rounded-xl
-              bg-[#00ADB5]
-              px-5
-              py-3
-              font-semibold
-              text-white
-              hover:bg-[#0097A0]
+                mb-5
+                inline-flex
+                items-center
+                justify-center
+                rounded-xl
+                bg-[#30475E]
+                px-4
+                py-2
+                text-sm
+                font-semibold
+                text-white
+                shadow-sm
+                transition
+                hover:bg-[#25384A]
+                active:scale-[0.98]
+                md:hidden
               "
             >
-              + Create Campaign
+              ☰ Menu
             </button>
-          </div>
 
-          {loading && (
-            <p className="mt-8 text-gray-500">Loading campaigns...</p>
-          )}
+            {/* =================================================
+                PAGE HEADER
+            ================================================= */}
 
-          {!loading && campaigns.length === 0 && (
             <div
               className="
-              mt-8
-              rounded-2xl
-              bg-white
-              p-8
-              shadow
+                flex
+                flex-col
+                gap-4
+                sm:flex-row
+                sm:items-center
+                sm:justify-between
               "
             >
-              No campaigns found.
-            </div>
-          )}
-
-          {!loading && campaigns.length > 0 && (
-            <div
-              className="
-              mt-8
-              grid
-              grid-cols-1
-              gap-6
-              lg:grid-cols-2
-              xl:grid-cols-3
-              "
-            >
-              {campaigns.map((campaign) => (
-                <div
-                  key={campaign._id}
+              <div className="min-w-0">
+                <h1
                   className="
-                  rounded-2xl
-                  bg-white
-                  p-6
-                  shadow-sm
+                    text-2xl
+                    font-bold
+                    leading-tight
+                    text-[#222831]
+                    sm:text-3xl
                   "
                 >
-                  <h2
-                    className="
-                    text-xl
-                    font-bold
-                    text-[#222831]
-                    "
-                  >
-                    {campaign.title}
-                  </h2>
+                  Manage Campaigns
+                </h1>
 
-                  <p
-                    className="
-                    mt-3
-                    line-clamp-3
-                    text-gray-600
-                    "
-                  >
-                    {campaign.description}
-                  </p>
+                <p className="mt-2 text-sm text-gray-500">
+                  Create and manage relief campaigns
+                </p>
+              </div>
 
-                  <div className="mt-5 space-y-2 text-sm">
-                    <p>
-                      Location:
-                      <span className="font-semibold">
-                        {" "}
-                        {campaign.location}
-                      </span>
-                    </p>
+              <button
+                type="button"
+                onClick={() => navigate("/admin/campaigns/create")}
+                className="
+                  inline-flex
+                  min-h-11
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-xl
+                  bg-[#00ADB5]
+                  px-5
+                  py-3
+                  text-sm
+                  font-semibold
+                  text-white
+                  shadow-sm
+                  transition
+                  hover:bg-[#0097A0]
+                  active:scale-[0.98]
+                "
+              >
+                + Create Campaign
+              </button>
+            </div>
 
-                    <p>
-                      Goal:
-                      <span className="font-semibold">
-                        {" "}
-                        ৳ {campaign.targetAmount}
-                      </span>
-                    </p>
+            {/* =================================================
+                LOADING
+            ================================================= */}
 
-                    <p>
-                      Status:
-                      <span className="font-semibold"> {campaign.status}</span>
-                    </p>
-                  </div>
-
+            {loading && (
+              <div
+                className="
+                  mt-8
+                  flex
+                  min-h-[250px]
+                  items-center
+                  justify-center
+                  rounded-2xl
+                  border
+                  border-gray-100
+                  bg-white
+                  shadow-sm
+                "
+              >
+                <div className="text-center">
                   <div
                     className="
-                    mt-6
-                    flex
-                    gap-3
+                      mx-auto
+                      h-9
+                      w-9
+                      animate-spin
+                      rounded-full
+                      border-4
+                      border-[#00ADB5]/20
+                      border-t-[#00ADB5]
+                    "
+                  />
+
+                  <p className="mt-4 text-sm font-medium text-gray-500">
+                    Loading campaigns...
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* =================================================
+                EMPTY STATE
+            ================================================= */}
+
+            {!loading && campaigns.length === 0 && (
+              <div
+                className="
+                  mt-8
+                  rounded-2xl
+                  border
+                  border-gray-100
+                  bg-white
+                  p-8
+                  text-center
+                  shadow-sm
+                "
+              >
+                <div className="mx-auto max-w-md">
+                  <div
+                    className="
+                      mx-auto
+                      flex
+                      h-14
+                      w-14
+                      items-center
+                      justify-center
+                      rounded-full
+                      bg-[#00ADB5]/10
+                      text-2xl
                     "
                   >
-                    <button
-                      onClick={() =>
-                        navigate(`/admin/campaigns/edit/${campaign._id}`)
-                      }
-                      className="
-                      flex-1
-                      rounded-xl
-                      border
-                      border-[#00ADB5]
-                      py-2
-                      font-semibold
-                      text-[#00ADB5]
-                      "
-                    >
-                      Edit
-                    </button>
+                    📋
+                  </div>
 
-                    <button
-                      onClick={() => handleDelete(campaign._id)}
-                      className="
-                      flex-1
+                  <h2 className="mt-4 text-lg font-bold text-[#222831]">
+                    No campaigns found
+                  </h2>
+
+                  <p className="mt-1 text-sm text-gray-500">
+                    Create your first relief campaign to get started.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate("/admin/campaigns/create")}
+                    className="
+                      mt-5
                       rounded-xl
-                      bg-red-500
-                      py-2
+                      bg-[#00ADB5]
+                      px-5
+                      py-2.5
+                      text-sm
                       font-semibold
                       text-white
+                      transition
+                      hover:bg-[#0097A0]
+                    "
+                  >
+                    + Create Campaign
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* =================================================
+                CAMPAIGN GRID
+            ================================================= */}
+
+            {!loading && campaigns.length > 0 && (
+              <div
+                className="
+                  mt-8
+                  grid
+                  grid-cols-1
+                  gap-5
+                  sm:gap-6
+                  lg:grid-cols-2
+                  xl:grid-cols-3
+                "
+              >
+                {campaigns.map((campaign) => (
+                  <div
+                    key={campaign._id}
+                    className="
+                      flex
+                      min-w-0
+                      flex-col
+                      rounded-2xl
+                      border
+                      border-gray-100
+                      bg-white
+                      p-5
+                      shadow-sm
+                      transition
+                      hover:-translate-y-0.5
+                      hover:shadow-md
+                      sm:p-6
+                    "
+                  >
+                    {/* Campaign title */}
+
+                    <h2
+                      className="
+                        break-words
+                        text-lg
+                        font-bold
+                        leading-snug
+                        text-[#222831]
+                        sm:text-xl
                       "
                     >
-                      Delete
-                    </button>
+                      {campaign.title}
+                    </h2>
+
+                    {/* Description */}
+
+                    <p
+                      className="
+                        mt-3
+                        line-clamp-3
+                        min-h-[60px]
+                        text-sm
+                        leading-relaxed
+                        text-gray-600
+                      "
+                    >
+                      {campaign.description}
+                    </p>
+
+                    {/* Campaign information */}
+
+                    <div
+                      className="
+                        mt-5
+                        space-y-3
+                        rounded-xl
+                        bg-gray-50
+                        p-4
+                        text-sm
+                      "
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="shrink-0 text-gray-500">Location</span>
+
+                        <span className="break-words text-right font-semibold text-[#222831]">
+                          {campaign.location}
+                        </span>
+                      </div>
+
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="shrink-0 text-gray-500">Goal</span>
+
+                        <span className="font-semibold text-[#222831]">
+                          ৳ {campaign.targetAmount}
+                        </span>
+                      </div>
+
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="shrink-0 text-gray-500">Status</span>
+
+                        <span
+                          className={`
+                            rounded-full
+                            px-2.5
+                            py-1
+                            text-xs
+                            font-bold
+                            ${
+                              campaign.status === "ACTIVE"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : campaign.status === "COMPLETED"
+                                  ? "bg-blue-50 text-blue-700"
+                                  : "bg-gray-100 text-gray-600"
+                            }
+                          `}
+                        >
+                          {campaign.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+
+                    <div
+                      className="
+                        mt-6
+                        grid
+                        grid-cols-2
+                        gap-3
+                        pt-1
+                      "
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate(`/admin/campaigns/edit/${campaign._id}`)
+                        }
+                        className="
+                          rounded-xl
+                          border
+                          border-[#00ADB5]
+                          px-3
+                          py-2.5
+                          text-sm
+                          font-semibold
+                          text-[#00ADB5]
+                          transition
+                          hover:bg-[#00ADB5]/5
+                          active:scale-[0.98]
+                        "
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(campaign._id)}
+                        className="
+                          rounded-xl
+                          bg-red-500
+                          px-3
+                          py-2.5
+                          text-sm
+                          font-semibold
+                          text-white
+                          transition
+                          hover:bg-red-600
+                          active:scale-[0.98]
+                        "
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </main>
-      </div>
+                ))}
+              </div>
+            )}
+
+            {/* Bottom spacing */}
+
+            <div className="h-8" />
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

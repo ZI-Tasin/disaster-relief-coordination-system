@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 
 const API_URL =
-  "https://disaster-relief-coordination-system-0z00.onrender.com/api/thresholds";
+  "https://disaster-relief-coordination-system-kmf2.onrender.com/api/thresholds";
 
 const DEFAULT_THRESHOLDS = {
   windowHours: 1,

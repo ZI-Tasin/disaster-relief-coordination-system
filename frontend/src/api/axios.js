@@ -1,11 +1,8 @@
 import axios from "axios";
-
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://disaster-relief-coordination-system-0z00.onrender.com/api";
+import API_BASE_URL from "../config/api";
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: API_BASE_URL,
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",
@@ -17,19 +14,17 @@ api.interceptors.request.use(
     const token = localStorage.getItem("token");
 
     if (token) {
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
 
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
 
 api.interceptors.response.use(
   (response) => response,
-
   (error) => {
     if (error.code === "ECONNABORTED") {
       console.error("API request timed out.");

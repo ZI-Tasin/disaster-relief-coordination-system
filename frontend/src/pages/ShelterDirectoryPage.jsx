@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
-  "https://disaster-relief-coordination-system-0z00.onrender.com";
+  "https://disaster-relief-coordination-system-kmf2.onrender.com";
 
 export default function PublicShelterDirectory() {
   const [shelters, setShelters] = useState([]);

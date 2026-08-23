@@ -3,7 +3,7 @@ import axios from "axios";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
-  "https://disaster-relief-coordination-system-0z00.onrender.com";
+  "https://disaster-relief-coordination-system-kmf2.onrender.com";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");

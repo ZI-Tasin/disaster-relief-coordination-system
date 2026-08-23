@@ -1,3 +1,5 @@
+// src/components/AdminSidebar.jsx
+
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -70,16 +72,18 @@ export default function AdminSidebar({ open, setOpen }) {
   return (
     <>
       {/* =====================================================
-          MOBILE OVERLAY
+          MOBILE BACKDROP
       ===================================================== */}
 
       {open && (
-        <div
+        <button
+          type="button"
+          aria-label="Close admin sidebar"
           onClick={() => setOpen(false)}
           className="
             fixed
             inset-0
-            z-40
+            z-[1040]
             bg-black/40
             backdrop-blur-[1px]
             md:hidden
@@ -88,35 +92,51 @@ export default function AdminSidebar({ open, setOpen }) {
       )}
 
       {/* =====================================================
-          SIDEBAR
+          ADMIN SIDEBAR
+
+          Navbar:
+          mobile = 60px
+          desktop = 68px
+
+          Sidebar begins EXACTLY below Navbar.
+
+          IMPORTANT:
+          Do not use top-0 here.
+          Do not use h-screen here.
+
+          This prevents the sidebar from appearing above
+          the Navbar.
       ===================================================== */}
 
       <aside
         className={`
           fixed
           left-0
-          top-0
-          z-50
+
+          top-[60px]
+          h-[calc(100vh-60px)]
+
+          sm:top-[68px]
+          sm:h-[calc(100vh-68px)]
+
+          z-[1050]
 
           flex
-          h-screen
           w-[260px]
           flex-col
 
+          overflow-hidden
+
           bg-[#30475E]
           text-white
+
           shadow-xl
 
           transition-transform
           duration-300
           ease-in-out
 
-          md:sticky
-          md:top-0
-          md:flex
-          md:translate-x-0
-
-          ${open ? "translate-x-0" : "-translate-x-full"}
+          ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
         {/* =================================================
@@ -127,66 +147,146 @@ export default function AdminSidebar({ open, setOpen }) {
           className="
             flex
             min-h-[76px]
+            shrink-0
             items-center
             justify-between
+
             border-b
             border-white/10
+
             px-5
           "
         >
-          <div>
-            <h2 className="text-lg font-bold tracking-wide">DRRCS Admin</h2>
+          <div className="flex min-w-0 items-center gap-3">
+            {/* Logo */}
 
-            <p className="mt-0.5 text-xs text-white/60">Administration Panel</p>
+            <div
+              className="
+                flex
+                h-10
+                w-10
+                shrink-0
+                items-center
+                justify-center
+
+                rounded-xl
+
+                bg-[#00ADB5]
+
+                text-sm
+                font-bold
+                text-white
+
+                shadow-sm
+              "
+            >
+              S
+            </div>
+
+            {/* Title */}
+
+            <div className="min-w-0">
+              <h2
+                className="
+                  truncate
+                  text-base
+                  font-bold
+                  leading-tight
+                  tracking-wide
+                  text-white
+                "
+              >
+                DRRCS Admin
+              </h2>
+
+              <p
+                className="
+                  mt-1
+                  truncate
+                  text-[10px]
+                  font-medium
+                  uppercase
+                  tracking-[0.08em]
+                  text-white/50
+                "
+              >
+                Administration Panel
+              </p>
+            </div>
           </div>
 
-          {/* Mobile Close Button */}
+          {/* Mobile close */}
 
           <button
             type="button"
             onClick={() => setOpen(false)}
+            aria-label="Close admin sidebar"
             className="
+              flex
+              h-9
+              w-9
+              shrink-0
+              items-center
+              justify-center
+
               rounded-lg
-              p-2
-              text-white/70
+
+              text-lg
+              text-white/60
+
               transition
+
               hover:bg-white/10
               hover:text-white
+
+              active:bg-white/20
+
               md:hidden
             "
-            aria-label="Close menu"
           >
-            ✕
+            ×
           </button>
         </div>
 
         {/* =================================================
             NAVIGATION
+
+            Only this section scrolls.
+
+            Sidebar itself stays fixed.
         ================================================= */}
 
         <nav
           className="
+            min-h-0
             flex-1
-            overflow-y-auto
-            px-3
-            py-4
 
-            scrollbar-thin
+            overflow-x-hidden
+            overflow-y-auto
+
+            px-3
+            py-5
           "
         >
+          {/* Section title */}
+
           <p
             className="
               mb-3
               px-3
+
               text-[10px]
-              font-semibold
+              font-bold
               uppercase
-              tracking-[0.15em]
+              tracking-[0.18em]
+
               text-white/40
             "
           >
             Administration
           </p>
+
+          {/* Navigation items */}
 
           <div className="space-y-1">
             {menuItems.map((item) => (
@@ -198,11 +298,15 @@ export default function AdminSidebar({ open, setOpen }) {
                   `
                     group
                     relative
+
                     flex
                     min-h-[44px]
+                    w-full
                     items-center
+
                     rounded-xl
-                    px-3.5
+
+                    px-3
                     py-2.5
 
                     text-[13px]
@@ -219,7 +323,8 @@ export default function AdminSidebar({ open, setOpen }) {
                           shadow-md
                         `
                         : `
-                          text-white/75
+                          text-white/70
+
                           hover:bg-white/[0.08]
                           hover:text-white
                         `
@@ -229,17 +334,21 @@ export default function AdminSidebar({ open, setOpen }) {
               >
                 {({ isActive }) => (
                   <>
-                    {/* Active Indicator */}
+                    {/* Active indicator */}
 
                     <span
                       className={`
                         absolute
                         left-0
                         top-1/2
+
                         h-6
                         w-1
+
                         -translate-y-1/2
+
                         rounded-r-full
+
                         bg-white
 
                         transition-opacity
@@ -248,34 +357,56 @@ export default function AdminSidebar({ open, setOpen }) {
                       `}
                     />
 
-                    {/* Menu Icon */}
+                    {/* Icon */}
 
                     <span
                       className={`
                         mr-3
+
                         flex
                         h-7
                         w-7
                         shrink-0
                         items-center
                         justify-center
+
                         rounded-lg
-                        text-xs
+
+                        text-[11px]
                         font-bold
+
+                        transition
 
                         ${
                           isActive
-                            ? "bg-white/15 text-white"
-                            : "bg-white/[0.06] text-white/50 group-hover:text-white"
+                            ? `
+                              bg-white/15
+                              text-white
+                            `
+                            : `
+                              bg-white/[0.06]
+                              text-white/50
+
+                              group-hover:bg-white/10
+                              group-hover:text-white
+                            `
                         }
                       `}
                     >
                       {item.name.charAt(0)}
                     </span>
 
-                    {/* Menu Name */}
+                    {/* Text */}
 
-                    <span className="truncate">{item.name}</span>
+                    <span
+                      className="
+                        min-w-0
+                        truncate
+                        leading-5
+                      "
+                    >
+                      {item.name}
+                    </span>
                   </>
                 )}
               </NavLink>
@@ -284,57 +415,97 @@ export default function AdminSidebar({ open, setOpen }) {
         </nav>
 
         {/* =================================================
-            BOTTOM SECTION
+            ADMIN ACCOUNT / LOGOUT
+
+            Always stays at bottom.
         ================================================= */}
 
         <div
           className="
+            shrink-0
+
             border-t
             border-white/10
-            bg-[#2b4055]
+
+            bg-[#2B4055]
+
             p-3
           "
         >
-          {/* Admin Status */}
+          {/* Administrator */}
 
           <div
             className="
               mb-3
+
               flex
               items-center
               gap-3
+
               rounded-xl
+
               bg-white/[0.05]
+
               px-3
               py-2.5
             "
           >
+            {/* Avatar */}
+
             <div
               className="
                 flex
-                h-8
-                w-8
+                h-9
+                w-9
                 shrink-0
                 items-center
                 justify-center
+
                 rounded-full
+
                 bg-[#00ADB5]
+
                 text-xs
                 font-bold
+                text-white
               "
             >
               A
             </div>
 
+            {/* Account details */}
+
             <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-white">
+              <p
+                className="
+                  truncate
+                  text-xs
+                  font-semibold
+                  text-white
+                "
+              >
                 Administrator
               </p>
 
-              <div className="mt-0.5 flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+              <div className="mt-1 flex items-center gap-1.5">
+                <span
+                  className="
+                    h-1.5
+                    w-1.5
+                    rounded-full
+                    bg-green-400
+                  "
+                />
 
-                <span className="text-[10px] text-white/50">Online</span>
+                <span
+                  className="
+                    text-[10px]
+                    font-medium
+                    text-white/50
+                  "
+                >
+                  Online
+                </span>
               </div>
             </div>
           </div>
@@ -346,14 +517,17 @@ export default function AdminSidebar({ open, setOpen }) {
             onClick={logout}
             className="
               flex
+              min-h-[42px]
               w-full
               items-center
               justify-center
               gap-2
 
               rounded-xl
+
               border
               border-white/10
+
               bg-[#00ADB5]
 
               px-4
@@ -363,15 +537,19 @@ export default function AdminSidebar({ open, setOpen }) {
               font-semibold
               text-white
 
+              shadow-sm
+
               transition-all
               duration-200
 
               hover:bg-[#0097A0]
               hover:shadow-md
+
               active:scale-[0.98]
             "
           >
-            <span>↪</span>
+            <span className="text-base leading-none">↪</span>
+
             <span>Log Out</span>
           </button>
         </div>

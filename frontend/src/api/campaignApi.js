@@ -1,37 +1,35 @@
-import axios from "axios";
+import api from "./axios";
 
-const API_URL =
-  import.meta.env.VITE_CAMPAIGN_API_URL ||
-  "https://disaster-relief-coordination-system-0z00.onrender.com/api/campaigns";
+export const getCampaigns = () => {
+  return api.get("/campaigns");
+};
 
-const api = axios.create({
-  baseURL: API_URL,
-});
+export const getCampaign = (id) => {
+  return api.get(`/campaigns/${id}`);
+};
 
-// Public
-export const getCampaigns = () => api.get("/");
-export const getCampaign = (id) => api.get(`/${id}`);
-
-// Protected
-export const createCampaign = (data, token) =>
-  api.post("/", data, {
+export const createCampaign = (data, token) => {
+  return api.post("/campaigns", data, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
+};
 
-export const updateCampaign = (id, data, token) =>
-  api.put(`/${id}`, data, {
+export const updateCampaign = (id, data, token) => {
+  return api.put(`/campaigns/${id}`, data, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
+};
 
-export const deleteCampaign = (id, token) =>
-  api.delete(`/${id}`, {
+export const deleteCampaign = (id, token) => {
+  return api.delete(`/campaigns/${id}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
+};
 
 export default api;

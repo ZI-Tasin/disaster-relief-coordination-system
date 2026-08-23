@@ -83,7 +83,7 @@ export const useDisasterReportForm = () => {
     try {
       try {
         await axios.post(
-          "https://disaster-relief-coordination-system-0z00.onrender.com/api/reports",
+          "https://disaster-relief-coordination-system-kmf2.onrender.com/api/reports",
           formData,
         );
       } catch (e) {

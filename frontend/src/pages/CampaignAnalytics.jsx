@@ -5,7 +5,7 @@ import AdminSidebar from "../components/AdminSidebar";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
-  "https://disaster-relief-coordination-system-0z00.onrender.com";
+  "https://disaster-relief-coordination-system-kmf2.onrender.com";
 
 export default function CampaignAnalytics() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -32,7 +32,8 @@ export default function CampaignAnalytics() {
 
       setError("");
 
-      const token = localStorage.getItem("token");
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("gontobbo_token");
 
       if (!token) {
         throw new Error("You are not logged in.");
@@ -42,6 +43,7 @@ export default function CampaignAnalytics() {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 
@@ -146,38 +148,69 @@ export default function CampaignAnalytics() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5F7FA]">
-        <Navbar setSidebarOpen={setSidebarOpen} />
-
-        <div className="flex min-h-screen">
-          <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
-
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">
-            <div className="flex min-h-[70vh] items-center justify-center">
-              <div className="text-center">
-                <div
-                  className="
-                    mx-auto
-                    h-11
-                    w-11
-                    animate-spin
-                    rounded-full
-                    border-4
-                    border-gray-200
-                    border-t-[#00ADB5]
-                  "
-                />
-
-                <p className="mt-4 text-sm font-medium text-gray-600">
-                  Loading campaign analytics...
-                </p>
-
-                <p className="mt-1 text-xs text-gray-400">
-                  Preparing donation and campaign data
-                </p>
-              </div>
-            </div>
-          </main>
+        {/* Fixed Navbar */}
+        <div className="fixed left-0 right-0 top-0 z-50">
+          <Navbar setSidebarOpen={setSidebarOpen} />
         </div>
+
+        {/* Fixed Sidebar */}
+        <aside
+          className="
+            fixed
+            left-0
+            top-16
+            bottom-0
+            z-40
+            hidden
+            w-64
+            overflow-y-auto
+            border-r
+            border-gray-200
+            bg-white
+            md:block
+          "
+        >
+          <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+        </aside>
+
+        {/* Mobile Sidebar */}
+        <div className="md:hidden">
+          <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+        </div>
+
+        {/* Main Content */}
+        <main
+          className="
+            min-h-screen
+            pt-16
+            md:ml-64
+          "
+        >
+          <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4 sm:p-6 lg:p-8">
+            <div className="text-center">
+              <div
+                className="
+                  mx-auto
+                  h-11
+                  w-11
+                  animate-spin
+                  rounded-full
+                  border-4
+                  border-gray-200
+                  border-t-[#00ADB5]
+                "
+              />
+
+              <p className="mt-4 text-sm font-medium text-gray-600">
+                Loading campaign analytics...
+              </p>
+
+              <p className="mt-1 text-xs text-gray-400">
+                Preparing donation and campaign data
+              </p>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -189,29 +222,45 @@ export default function CampaignAnalytics() {
   if (error) {
     return (
       <div className="min-h-screen bg-[#F5F7FA]">
-        <Navbar setSidebarOpen={setSidebarOpen} />
+        {/* Fixed Navbar */}
+        <div className="fixed left-0 right-0 top-0 z-50">
+          <Navbar setSidebarOpen={setSidebarOpen} />
+        </div>
 
-        <div className="flex min-h-screen">
+        {/* Fixed Desktop Sidebar */}
+        <aside
+          className="
+            fixed
+            left-0
+            top-16
+            bottom-0
+            z-40
+            hidden
+            w-64
+            overflow-y-auto
+            border-r
+            border-gray-200
+            bg-white
+            md:block
+          "
+        >
           <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+        </aside>
 
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="
-                mb-5
-                rounded-xl
-                bg-[#30475E]
-                px-4
-                py-2
-                text-sm
-                font-semibold
-                text-white
-                md:hidden
-              "
-            >
-              ☰ Menu
-            </button>
+        {/* Mobile Sidebar */}
+        <div className="md:hidden">
+          <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+        </div>
 
+        {/* Main */}
+        <main
+          className="
+            min-h-screen
+            pt-16
+            md:ml-64
+          "
+        >
+          <div className="p-4 sm:p-6 lg:p-8">
             <div
               className="
                 mx-auto
@@ -269,8 +318,8 @@ export default function CampaignAnalytics() {
                 </div>
               </div>
             </div>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -288,7 +337,7 @@ export default function CampaignAnalytics() {
   const recentDonations = analytics?.recentDonations || [];
 
   // =====================================================
-  // CALCULATED UI DATA
+  // CALCULATED DATA
   // =====================================================
 
   const totalRaised = Number(summary.totalRaised || 0);
@@ -312,36 +361,67 @@ export default function CampaignAnalytics() {
 
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
-      <Navbar setSidebarOpen={setSidebarOpen} />
+      {/* =================================================
+          FIXED NAVBAR
+      ================================================= */}
 
-      <div className="flex min-h-screen">
+      <div className="fixed left-0 right-0 top-0 z-50">
+        <Navbar setSidebarOpen={setSidebarOpen} />
+      </div>
+
+      {/* =================================================
+          FIXED DESKTOP SIDEBAR
+
+          Sidebar width = 64
+          Main margin-left = 64
+      ================================================= */}
+
+      <aside
+        className="
+          fixed
+          left-0
+          top-16
+          bottom-0
+          z-40
+          hidden
+          w-64
+          overflow-y-auto
+          border-r
+          border-gray-200
+          bg-white
+          md:block
+        "
+      >
         <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+      </aside>
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
-          {/* =================================================
-              MOBILE MENU
-          ================================================= */}
+      {/* =================================================
+          MOBILE SIDEBAR
 
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="
-              mb-5
-              rounded-xl
-              bg-[#30475E]
-              px-4
-              py-2.5
-              text-sm
-              font-semibold
-              text-white
-              shadow-sm
-              transition
-              hover:bg-[#222831]
-              md:hidden
-            "
-          >
-            ☰ Menu
-          </button>
+          No menu button here.
+          Navbar controls the sidebar.
+      ================================================= */}
 
+      <div className="md:hidden">
+        <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+      </div>
+
+      {/* =================================================
+          MAIN CONTENT
+
+          IMPORTANT:
+          md:ml-64 prevents content from going underneath
+          the fixed AdminSidebar.
+      ================================================= */}
+
+      <main
+        className="
+          min-h-screen
+          pt-16
+          md:ml-64
+        "
+      >
+        <div className="min-w-0 p-4 sm:p-6 lg:p-8">
           {/* =================================================
               PAGE HEADER
           ================================================= */}
@@ -648,7 +728,7 @@ export default function CampaignAnalytics() {
           </section>
 
           {/* =================================================
-              TOP CAMPAIGN HIGHLIGHT
+              TOP CAMPAIGN
           ================================================= */}
 
           {topCampaign && (
@@ -802,11 +882,11 @@ export default function CampaignAnalytics() {
                       <tr
                         key={campaign.campaignId}
                         className="
-                          border-b
-                          border-gray-50
-                          last:border-0
-                          hover:bg-gray-50/70
-                        "
+                            border-b
+                            border-gray-50
+                            last:border-0
+                            hover:bg-gray-50/70
+                          "
                       >
                         <td className="px-6 py-5">
                           <p className="font-semibold text-[#222831]">
@@ -855,16 +935,16 @@ export default function CampaignAnalytics() {
 
                           <span
                             className={`
-                              mt-2
-                              inline-flex
-                              rounded-full
-                              border
-                              px-2.5
-                              py-1
-                              text-[10px]
-                              font-semibold
-                              ${campaignStatus.className}
-                            `}
+                                mt-2
+                                inline-flex
+                                rounded-full
+                                border
+                                px-2.5
+                                py-1
+                                text-[10px]
+                                font-semibold
+                                ${campaignStatus.className}
+                              `}
                           >
                             {campaignStatus.label}
                           </span>
@@ -897,11 +977,11 @@ export default function CampaignAnalytics() {
                   <div
                     key={campaign.campaignId}
                     className="
-                      rounded-xl
-                      border
-                      border-gray-100
-                      p-4
-                    "
+                        rounded-xl
+                        border
+                        border-gray-100
+                        p-4
+                      "
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
@@ -916,15 +996,15 @@ export default function CampaignAnalytics() {
 
                       <span
                         className="
-                          shrink-0
-                          rounded-full
-                          bg-[#00ADB5]/10
-                          px-2.5
-                          py-1
-                          text-xs
-                          font-bold
-                          text-[#008C93]
-                        "
+                            shrink-0
+                            rounded-full
+                            bg-[#00ADB5]/10
+                            px-2.5
+                            py-1
+                            text-xs
+                            font-bold
+                            text-[#008C93]
+                          "
                       >
                         {Number(campaign.shareOfTotal || 0).toFixed(1)}%
                       </span>
@@ -976,16 +1056,16 @@ export default function CampaignAnalytics() {
 
                       <span
                         className={`
-                          mt-3
-                          inline-flex
-                          rounded-full
-                          border
-                          px-2.5
-                          py-1
-                          text-[10px]
-                          font-semibold
-                          ${campaignStatus.className}
-                        `}
+                            mt-3
+                            inline-flex
+                            rounded-full
+                            border
+                            px-2.5
+                            py-1
+                            text-[10px]
+                            font-semibold
+                            ${campaignStatus.className}
+                          `}
                       >
                         {campaignStatus.label}
                       </span>
@@ -1059,30 +1139,30 @@ export default function CampaignAnalytics() {
                   <div
                     key={item.status}
                     className="
-                      flex
-                      items-center
-                      justify-between
-                      gap-4
-                      rounded-xl
-                      border
-                      border-gray-100
-                      p-4
-                      transition
-                      hover:bg-gray-50
-                    "
+                        flex
+                        items-center
+                        justify-between
+                        gap-4
+                        rounded-xl
+                        border
+                        border-gray-100
+                        p-4
+                        transition
+                        hover:bg-gray-50
+                      "
                   >
                     <div className="min-w-0">
                       <span
                         className={`
-                          inline-flex
-                          rounded-full
-                          border
-                          px-3
-                          py-1
-                          text-xs
-                          font-semibold
-                          ${getStatusStyle(item.status)}
-                        `}
+                            inline-flex
+                            rounded-full
+                            border
+                            px-3
+                            py-1
+                            text-xs
+                            font-semibold
+                            ${getStatusStyle(item.status)}
+                          `}
                       >
                         {item.status}
                       </span>
@@ -1152,13 +1232,13 @@ export default function CampaignAnalytics() {
                   <div
                     key={donation._id}
                     className="
-                      rounded-xl
-                      border
-                      border-gray-100
-                      p-4
-                      transition
-                      hover:bg-gray-50
-                    "
+                        rounded-xl
+                        border
+                        border-gray-100
+                        p-4
+                        transition
+                        hover:bg-gray-50
+                      "
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
@@ -1185,16 +1265,16 @@ export default function CampaignAnalytics() {
 
                       <span
                         className="
-                          ml-auto
-                          rounded-full
-                          border
-                          border-green-100
-                          bg-green-50
-                          px-2.5
-                          py-1
-                          font-semibold
-                          text-green-700
-                        "
+                            ml-auto
+                            rounded-full
+                            border
+                            border-green-100
+                            bg-green-50
+                            px-2.5
+                            py-1
+                            font-semibold
+                            text-green-700
+                          "
                       >
                         Paid
                       </span>
@@ -1272,8 +1352,8 @@ export default function CampaignAnalytics() {
               </div>
             </div>
           </section>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
