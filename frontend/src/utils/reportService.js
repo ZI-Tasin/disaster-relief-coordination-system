@@ -1,13 +1,15 @@
 // frontend/src/utils/reportService.js
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000') + '/api';
+const API_BASE =
+  (import.meta.env.VITE_API_BASE_URL ||
+    "https://disaster-relief-coordination-system-0z00.onrender.com") + "/api";
 
 /**
  * Helper: Retrieve token and construct authorization headers
  */
 const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   return {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 };
@@ -18,7 +20,7 @@ const getAuthHeaders = () => {
 export const getCurrentLocation = () => {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      reject(new Error('Geolocation is not supported by your browser.'));
+      reject(new Error("Geolocation is not supported by your browser."));
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -29,7 +31,7 @@ export const getCurrentLocation = () => {
         });
       },
       (error) => reject(error),
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000 },
     );
   });
 };
@@ -40,17 +42,17 @@ export const getCurrentLocation = () => {
 export const createReport = async (reportData) => {
   const payload = {
     ...reportData,
-    status: 'unverified',
+    status: "unverified",
     createdAt: new Date().toISOString(),
   };
 
   const response = await fetch(`${API_BASE}/reports`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
-  if (!response.ok) throw new Error('Failed to submit disaster report');
+  if (!response.ok) throw new Error("Failed to submit disaster report");
   return response.json();
 };
 
@@ -59,7 +61,7 @@ export const createReport = async (reportData) => {
  */
 export const fetchPublicReports = async () => {
   const response = await fetch(`${API_BASE}/reports?status=verified`);
-  if (!response.ok) throw new Error('Failed to fetch public live map reports');
+  if (!response.ok) throw new Error("Failed to fetch public live map reports");
   return response.json();
 };
 
@@ -72,7 +74,7 @@ export const fetchAllReports = async (filters = {}) => {
     headers: getAuthHeaders(),
   });
 
-  if (!response.ok) throw new Error('Failed to fetch report overview list');
+  if (!response.ok) throw new Error("Failed to fetch report overview list");
   return response.json();
 };
 
@@ -84,7 +86,7 @@ export const fetchReportById = async (reportId) => {
     headers: getAuthHeaders(),
   });
 
-  if (!response.ok) throw new Error('Failed to fetch report details');
+  if (!response.ok) throw new Error("Failed to fetch report details");
   return response.json();
 };
 
@@ -93,11 +95,11 @@ export const fetchReportById = async (reportId) => {
  */
 export const verifyReport = async (reportId) => {
   const response = await fetch(`${API_BASE}/reports/${reportId}/verify`, {
-    method: 'PUT',
+    method: "PUT",
     headers: getAuthHeaders(),
   });
 
-  if (!response.ok) throw new Error('Failed to verify report');
+  if (!response.ok) throw new Error("Failed to verify report");
   return response.json();
 };
 
@@ -106,11 +108,11 @@ export const verifyReport = async (reportId) => {
  */
 export const rejectReport = async (reportId) => {
   const response = await fetch(`${API_BASE}/reports/${reportId}/reject`, {
-    method: 'PUT',
+    method: "PUT",
     headers: getAuthHeaders(),
   });
 
-  if (!response.ok) throw new Error('Failed to reject report');
+  if (!response.ok) throw new Error("Failed to reject report");
   return response.json();
 };
 
@@ -119,12 +121,12 @@ export const rejectReport = async (reportId) => {
  */
 export const updateReport = async (reportId, updateData) => {
   const response = await fetch(`${API_BASE}/reports/${reportId}`, {
-    method: 'PATCH',
+    method: "PATCH",
     headers: getAuthHeaders(),
     body: JSON.stringify(updateData),
   });
 
-  if (!response.ok) throw new Error('Failed to update report');
+  if (!response.ok) throw new Error("Failed to update report");
   return response.json();
 };
 
@@ -136,7 +138,7 @@ export const fetchThresholdSettings = async () => {
     headers: getAuthHeaders(),
   });
 
-  if (!response.ok) throw new Error('Failed to fetch threshold settings');
+  if (!response.ok) throw new Error("Failed to fetch threshold settings");
   return response.json();
 };
 
@@ -145,11 +147,11 @@ export const fetchThresholdSettings = async () => {
  */
 export const updateThresholdSettings = async (settingsData) => {
   const response = await fetch(`${API_BASE}/settings/thresholds`, {
-    method: 'PUT',
+    method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(settingsData),
   });
 
-  if (!response.ok) throw new Error('Failed to update threshold settings');
+  if (!response.ok) throw new Error("Failed to update threshold settings");
   return response.json();
 };

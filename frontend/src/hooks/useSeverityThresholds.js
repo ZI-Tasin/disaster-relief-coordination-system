@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useEffect } from "react";
+import axios from "axios";
 
-const API_URL = 'http://localhost:8000/api/thresholds';
+const API_URL =
+  "https://disaster-relief-coordination-system-0z00.onrender.com/api/thresholds";
 
 const DEFAULT_THRESHOLDS = {
   windowHours: 1,
@@ -14,7 +15,7 @@ export const useSeverityThresholds = () => {
   const [initialData, setInitialData] = useState(DEFAULT_THRESHOLDS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState({ type: '', message: '' });
+  const [feedback, setFeedback] = useState({ type: "", message: "" });
 
   useEffect(() => {
     fetchThresholds();
@@ -39,14 +40,14 @@ export const useSeverityThresholds = () => {
   const handleInputChange = (field, value) => {
     setThresholds((prev) => ({
       ...prev,
-      [field]: value === '' ? '' : Number(value),
+      [field]: value === "" ? "" : Number(value),
     }));
-    if (feedback.type === 'error') setFeedback({ type: '', message: '' });
+    if (feedback.type === "error") setFeedback({ type: "", message: "" });
   };
 
   const handleReset = () => {
     setThresholds(initialData);
-    setFeedback({ type: '', message: '' });
+    setFeedback({ type: "", message: "" });
   };
 
   const handleSubmit = async (e) => {
@@ -58,14 +59,18 @@ export const useSeverityThresholds = () => {
 
     // Validation Guards
     if (!time || time < 1 || time > 72) {
-      setFeedback({ type: 'error', message: 'Rolling Time Window must be between 1 and 72 hours.' });
+      setFeedback({
+        type: "error",
+        message: "Rolling Time Window must be between 1 and 72 hours.",
+      });
       return;
     }
 
     if (med >= crit) {
       setFeedback({
-        type: 'error',
-        message: 'Medium Severity Threshold must be strictly less than Critical Severity Threshold.',
+        type: "error",
+        message:
+          "Medium Severity Threshold must be strictly less than Critical Severity Threshold.",
       });
       return;
     }
@@ -74,11 +79,15 @@ export const useSeverityThresholds = () => {
     try {
       await axios.put(API_URL, thresholds);
       setInitialData(thresholds);
-      setFeedback({ type: 'success', message: 'Severity thresholds updated successfully!' });
+      setFeedback({
+        type: "success",
+        message: "Severity thresholds updated successfully!",
+      });
     } catch (err) {
       setFeedback({
-        type: 'error',
-        message: err.response?.data?.message || 'Failed to save threshold settings.',
+        type: "error",
+        message:
+          err.response?.data?.message || "Failed to save threshold settings.",
       });
     } finally {
       setSaving(false);

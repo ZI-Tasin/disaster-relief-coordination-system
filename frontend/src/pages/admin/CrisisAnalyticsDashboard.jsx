@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-import AnalyticsSummaryCards from '../../components/AnalyticsSummaryCards.jsx';
-import CrisisAnalyticsCharts from '../../components/CrisisAnalyticsCharts.jsx';
-import AdminSidebar from '../../components/AdminSidebar.jsx';
+import React, { useState, useEffect, useCallback } from "react";
+import axios from "axios";
+import AnalyticsSummaryCards from "../../components/AnalyticsSummaryCards.jsx";
+import CrisisAnalyticsCharts from "../../components/CrisisAnalyticsCharts.jsx";
+import AdminSidebar from "../../components/AdminSidebar.jsx";
 
 export default function CrisisAnalyticsDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -11,30 +11,37 @@ export default function CrisisAnalyticsDashboard() {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-  const token = localStorage.getItem('token');
+  const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL ||
+    "https://disaster-relief-coordination-system-0z00.onrender.com";
+  const token = localStorage.getItem("token");
 
-  const fetchAnalytics = useCallback(async (isSilent = false) => {
-    if (!isSilent) setLoading(true);
-    setError(null);
+  const fetchAnalytics = useCallback(
+    async (isSilent = false) => {
+      if (!isSilent) setLoading(true);
+      setError(null);
 
-    try {
-      const res = await axios.get(`${API_BASE_URL}/api/analytics/dashboard`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setData(res.data);
-      setLastUpdated(new Date().toLocaleTimeString());
-    } catch (err) {
-      console.error('Failed to load analytics:', err);
-      setError(err.response?.data?.message || 'Failed to fetch analytics data.');
-    } finally {
-      setLoading(false);
-    }
-  }, [API_BASE_URL, token]);
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/analytics/dashboard`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setData(res.data);
+        setLastUpdated(new Date().toLocaleTimeString());
+      } catch (err) {
+        console.error("Failed to load analytics:", err);
+        setError(
+          err.response?.data?.message || "Failed to fetch analytics data.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [API_BASE_URL, token],
+  );
 
   useEffect(() => {
     fetchAnalytics();
-    
+
     // Auto-refresh quietly every 30 seconds
     const interval = setInterval(() => {
       fetchAnalytics(true);
@@ -62,10 +69,16 @@ export default function CrisisAnalyticsDashboard() {
         <main className="p-8 max-w-7xl w-full mx-auto space-y-8 flex-1">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Regional Crisis Analytics</h1>
+              <h1 className="text-2xl font-bold text-slate-900">
+                Regional Crisis Analytics
+              </h1>
               <p className="text-xs text-slate-500 mt-0.5">
                 Real-time situational awareness (Auto-refreshes every 30s)
-                {lastUpdated && <span className="ml-2 font-medium text-slate-400">• Updated: {lastUpdated}</span>}
+                {lastUpdated && (
+                  <span className="ml-2 font-medium text-slate-400">
+                    • Updated: {lastUpdated}
+                  </span>
+                )}
               </p>
             </div>
 
@@ -74,7 +87,7 @@ export default function CrisisAnalyticsDashboard() {
               disabled={loading}
               className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition shadow-sm disabled:opacity-50 self-start sm:self-auto flex items-center gap-1.5"
             >
-              🔄 {loading ? 'Refreshing...' : 'Refresh Now'}
+              🔄 {loading ? "Refreshing..." : "Refresh Now"}
             </button>
           </div>
 

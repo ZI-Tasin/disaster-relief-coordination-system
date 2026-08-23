@@ -24,7 +24,9 @@ const SMSBroadcast = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [broadcastResult, setBroadcastResult] = useState(null);
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+  const API_URL =
+    import.meta.env.VITE_API_URL ||
+    "https://disaster-relief-coordination-system-0z00.onrender.com/api";
 
   // =========================================================
   // FETCH DISTRICTS
@@ -54,9 +56,12 @@ const SMSBroadcast = () => {
 
   const fetchDrafts = async () => {
     try {
-      const response = await axios.get(`${API_URL}/notifications?status=draft`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `${API_URL}/notifications?status=draft`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       setDrafts(response.data.data || []);
     } catch (error) {
       console.error("Error fetching drafts:", error);
@@ -86,14 +91,17 @@ const SMSBroadcast = () => {
 
     if (draftId) {
       try {
-        const response = await axios.get(`${API_URL}/notifications/${draftId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(
+          `${API_URL}/notifications/${draftId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
         const draft = response.data.data;
         setMessageBody(draft.messageBody || "");
         setDistrict(draft.district || "");
         setSeverity(draft.severity || "");
-        
+
         if (draft.district) {
           fetchVolunteerPreview(draft.district);
         }
@@ -118,7 +126,7 @@ const SMSBroadcast = () => {
         `${API_URL}/sms/volunteers/${encodeURIComponent(selectedDistrict)}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
       setPreviewVolunteers(response.data.data || []);
       setShowPreview(true);
@@ -160,8 +168,8 @@ const SMSBroadcast = () => {
 
     const confirmed = window.confirm(
       `⚠️ Are you sure you want to send this SMS broadcast to ${district}?\n\n` +
-      `Message: ${messageBody.substring(0, 100)}...\n\n` +
-      `This will send to volunteers in ${district}.`
+        `Message: ${messageBody.substring(0, 100)}...\n\n` +
+        `This will send to volunteers in ${district}.`,
     );
 
     if (!confirmed) return;
@@ -177,13 +185,9 @@ const SMSBroadcast = () => {
         severity: severity,
       };
 
-      const response = await axios.post(
-        `${API_URL}/sms/broadcast`,
-        payload,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await axios.post(`${API_URL}/sms/broadcast`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       setBroadcastResult(response.data.data);
       toast.success(response.data.message || "Broadcast sent successfully!");
@@ -198,7 +202,6 @@ const SMSBroadcast = () => {
         setPreviewVolunteers([]);
         setShowPreview(false);
       }
-
     } catch (error) {
       console.error("Error sending broadcast:", error);
       toast.error(error.response?.data?.message || "Failed to send broadcast");
@@ -229,7 +232,6 @@ const SMSBroadcast = () => {
   // =========================================================
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
-
       {/* =====================================================
           FIXED TOP NAVBAR
           ===================================================== */}
@@ -254,10 +256,7 @@ const SMSBroadcast = () => {
           overflow-y-auto
         "
       >
-        <AdminSidebar
-          open={sidebarOpen}
-          setOpen={setSidebarOpen}
-        />
+        <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
       </div>
 
       {/* =====================================================
@@ -271,7 +270,6 @@ const SMSBroadcast = () => {
         "
       >
         <div className="p-4 sm:p-6 lg:p-8">
-
           {/* Mobile menu button */}
           <button
             onClick={() => setSidebarOpen(true)}
@@ -308,16 +306,16 @@ const SMSBroadcast = () => {
               FORM + LOGS
               ================================================= */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
             {/* =================================================
                 LEFT: COMPOSE BROADCAST
                 ================================================= */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Compose Broadcast</h2>
+                <h2 className="text-xl font-semibold mb-4">
+                  Compose Broadcast
+                </h2>
 
                 <form onSubmit={handleSendBroadcast} className="space-y-6">
-
                   {/* Select Draft */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -331,7 +329,8 @@ const SMSBroadcast = () => {
                       <option value="">Select a draft...</option>
                       {drafts.map((draft) => (
                         <option key={draft._id} value={draft._id}>
-                          {draft.messageBody.substring(0, 50)}... ({draft.district}) - {draft.severity}
+                          {draft.messageBody.substring(0, 50)}... (
+                          {draft.district}) - {draft.severity}
                         </option>
                       ))}
                     </select>
@@ -366,7 +365,8 @@ const SMSBroadcast = () => {
                   {severity && (
                     <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <p className="text-sm text-blue-700">
-                        <span className="font-semibold">Severity:</span> {severity}
+                        <span className="font-semibold">Severity:</span>{" "}
+                        {severity}
                       </p>
                     </div>
                   )}
@@ -405,19 +405,27 @@ const SMSBroadcast = () => {
                 {/* Broadcast Result */}
                 {broadcastResult && (
                   <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h3 className="font-semibold text-gray-700 mb-2">Broadcast Result</h3>
+                    <h3 className="font-semibold text-gray-700 mb-2">
+                      Broadcast Result
+                    </h3>
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <span className="text-gray-500">Total:</span>
-                        <span className="ml-2 font-medium">{broadcastResult.totalVolunteers}</span>
+                        <span className="ml-2 font-medium">
+                          {broadcastResult.totalVolunteers}
+                        </span>
                       </div>
                       <div>
                         <span className="text-green-600">✓ Sent:</span>
-                        <span className="ml-2 font-medium">{broadcastResult.sentCount}</span>
+                        <span className="ml-2 font-medium">
+                          {broadcastResult.sentCount}
+                        </span>
                       </div>
                       <div>
                         <span className="text-red-600">✗ Failed:</span>
-                        <span className="ml-2 font-medium">{broadcastResult.failedCount}</span>
+                        <span className="ml-2 font-medium">
+                          {broadcastResult.failedCount}
+                        </span>
                       </div>
                     </div>
                     {broadcastResult.mockMode && (
@@ -436,7 +444,7 @@ const SMSBroadcast = () => {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <h2 className="text-xl font-semibold mb-4">📋 Delivery Logs</h2>
-                
+
                 {deliveryLogs.length === 0 ? (
                   <p className="text-gray-500 text-sm">No SMS logs yet.</p>
                 ) : (
@@ -462,9 +470,7 @@ const SMSBroadcast = () => {
                           </span>
                         </div>
                         <div className="flex justify-between mt-2 text-xs text-gray-400">
-                          <span>
-                            {log.deliveryLog?.length || 0} recipients
-                          </span>
+                          <span>{log.deliveryLog?.length || 0} recipients</span>
                           <span>
                             {new Date(log.createdAt).toLocaleString()}
                           </span>
@@ -520,7 +526,10 @@ const SMSBroadcast = () => {
                     ))}
                     {previewVolunteers.length > 10 && (
                       <tr>
-                        <td colSpan="3" className="px-4 py-2 text-sm text-gray-500 text-center">
+                        <td
+                          colSpan="3"
+                          className="px-4 py-2 text-sm text-gray-500 text-center"
+                        >
                           +{previewVolunteers.length - 10} more volunteers
                         </td>
                       </tr>
@@ -530,7 +539,6 @@ const SMSBroadcast = () => {
               </div>
             </div>
           )}
-
         </div>
       </main>
     </div>

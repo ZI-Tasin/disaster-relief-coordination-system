@@ -1,28 +1,46 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
-export function useIncidents(apiUrl = 'http://localhost:8000/api/reports') {
+export function useIncidents(
+  apiUrl = "https://disaster-relief-coordination-system-0z00.onrender.com/api/reports",
+) {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Filter States
-  const [severityFilter, setSeverityFilter] = useState({ Low: true, Medium: true, Critical: true });
-  const [crisisFilter, setCrisisFilter] = useState({ Flood: true, Earthquake: true, Cyclone: true, Other: true });
+  const [severityFilter, setSeverityFilter] = useState({
+    Low: true,
+    Medium: true,
+    Critical: true,
+  });
+  const [crisisFilter, setCrisisFilter] = useState({
+    Flood: true,
+    Earthquake: true,
+    Cyclone: true,
+    Other: true,
+  });
 
   const fetchIncidents = useCallback(async () => {
     try {
       const response = await fetch(apiUrl);
       if (response.ok) {
         const json = await response.json();
-        
+
         // 1. Safely extract array from response wrapper
         const rawReports = Array.isArray(json) ? json : json.data || [];
 
         // 2. Case-insensitive status check & flexible coordinate conversion
         const active = rawReports
           .filter((item) => {
-            const isVerified = item.status && item.status.toLowerCase() === 'verified';
-            const hasLat = item.latitude !== null && item.latitude !== undefined && !isNaN(Number(item.latitude));
-            const hasLng = item.longitude !== null && item.longitude !== undefined && !isNaN(Number(item.longitude));
+            const isVerified =
+              item.status && item.status.toLowerCase() === "verified";
+            const hasLat =
+              item.latitude !== null &&
+              item.latitude !== undefined &&
+              !isNaN(Number(item.latitude));
+            const hasLng =
+              item.longitude !== null &&
+              item.longitude !== undefined &&
+              !isNaN(Number(item.longitude));
             return isVerified && hasLat && hasLng;
           })
           .map((item) => ({
@@ -34,7 +52,7 @@ export function useIncidents(apiUrl = 'http://localhost:8000/api/reports') {
         setIncidents(active);
       }
     } catch (err) {
-      console.error('Failed to fetch live incident map data:', err);
+      console.error("Failed to fetch live incident map data:", err);
     } finally {
       setLoading(false);
     }
@@ -49,13 +67,14 @@ export function useIncidents(apiUrl = 'http://localhost:8000/api/reports') {
   // Dedicated Resolve Route Handler
   const resolveIncident = async (incidentId) => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const token =
+        localStorage.getItem("token") || localStorage.getItem("authToken");
 
       // Calls the dedicated /:id/resolve endpoint
       const response = await fetch(`${apiUrl}/${incidentId}/resolve`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
@@ -66,11 +85,11 @@ export function useIncidents(apiUrl = 'http://localhost:8000/api/reports') {
         // Optimistically remove from state only when DB update succeeds
         setIncidents((prev) => prev.filter((item) => item._id !== incidentId));
       } else {
-        alert(`Failed to resolve incident: ${data.message || 'Server error'}`);
+        alert(`Failed to resolve incident: ${data.message || "Server error"}`);
       }
     } catch (err) {
-      console.error('Error resolving incident:', err);
-      alert('Network error while resolving incident.');
+      console.error("Error resolving incident:", err);
+      alert("Network error while resolving incident.");
     }
   };
 

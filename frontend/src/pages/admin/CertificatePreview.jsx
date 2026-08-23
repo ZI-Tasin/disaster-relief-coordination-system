@@ -13,7 +13,9 @@ const CertificatePreview = () => {
   const [loading, setLoading] = useState(false);
   const [certificates, setCertificates] = useState([]);
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+  const API_URL =
+    import.meta.env.VITE_API_URL ||
+    "https://disaster-relief-coordination-system-0z00.onrender.com/api";
 
   useEffect(() => {
     if (user?.role === "volunteer" || user?.role === "admin") {

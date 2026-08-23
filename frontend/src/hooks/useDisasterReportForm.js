@@ -1,14 +1,14 @@
-import { useState } from 'react';
-import axios from 'axios';
-import { useGeolocation } from './useGeolocation';
+import { useState } from "react";
+import axios from "axios";
+import { useGeolocation } from "./useGeolocation";
 
 const INITIAL_FORM_STATE = {
-  crisisType: '',
-  description: '',
-  division: '',
-  district: '',
-  subdistrict: '',
-  manualAddress: '',
+  crisisType: "",
+  description: "",
+  division: "",
+  district: "",
+  subdistrict: "",
+  manualAddress: "",
   latitude: null,
   longitude: null,
 };
@@ -16,7 +16,7 @@ const INITIAL_FORM_STATE = {
 export const useDisasterReportForm = () => {
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [submitting, setSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState({ type: '', message: '' });
+  const [feedback, setFeedback] = useState({ type: "", message: "" });
 
   const { getCurrentLocation, detectingLocation } = useGeolocation();
 
@@ -30,7 +30,7 @@ export const useDisasterReportForm = () => {
   };
 
   const handleUseLocation = () => {
-    setFeedback({ type: '', message: '' });
+    setFeedback({ type: "", message: "" });
     getCurrentLocation(
       (data) => {
         setFormData((prev) => ({
@@ -42,50 +42,64 @@ export const useDisasterReportForm = () => {
           subdistrict: prev.subdistrict || data.detectedSubdistrict,
         }));
         setFeedback({
-          type: 'success',
+          type: "success",
           message: `Location detected: ${
-            data.detectedSubdistrict ? data.detectedSubdistrict + ', ' : ''
+            data.detectedSubdistrict ? data.detectedSubdistrict + ", " : ""
           }${data.detectedDistrict}`,
         });
       },
       (errorMessage) => {
-        setFeedback({ type: 'error', message: errorMessage });
-      }
+        setFeedback({ type: "error", message: errorMessage });
+      },
     );
   };
 
   const resetForm = () => {
     setFormData(INITIAL_FORM_STATE);
-    setFeedback({ type: '', message: '' });
+    setFeedback({ type: "", message: "" });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.crisisType) {
-      setFeedback({ type: 'error', message: 'Please explicitly click to select a Crisis Type before submitting.' });
+      setFeedback({
+        type: "error",
+        message:
+          "Please explicitly click to select a Crisis Type before submitting.",
+      });
       return;
     }
 
     if (!formData.district || !formData.subdistrict) {
-      setFeedback({ type: 'error', message: 'Please select both District and Sub-district.' });
+      setFeedback({
+        type: "error",
+        message: "Please select both District and Sub-district.",
+      });
       return;
     }
 
     setSubmitting(true);
     try {
       try {
-        await axios.post('http://localhost:8000/api/reports', formData);
+        await axios.post(
+          "https://disaster-relief-coordination-system-0z00.onrender.com/api/reports",
+          formData,
+        );
       } catch (e) {
-        await axios.post('/api/reports', formData);
+        await axios.post("/api/reports", formData);
       }
 
-      setFeedback({ type: 'success', message: 'Report submitted successfully! Pending verification.' });
+      setFeedback({
+        type: "success",
+        message: "Report submitted successfully! Pending verification.",
+      });
       resetForm();
     } catch (err) {
       setFeedback({
-        type: 'error',
-        message: err.response?.data?.message || 'Submission failed. Please try again.',
+        type: "error",
+        message:
+          err.response?.data?.message || "Submission failed. Please try again.",
       });
     } finally {
       setSubmitting(false);

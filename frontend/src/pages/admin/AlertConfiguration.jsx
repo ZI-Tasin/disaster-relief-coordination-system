@@ -31,7 +31,8 @@ const AlertConfigurationMatrix = () => {
   });
 
   const API_URL =
-    import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+    import.meta.env.VITE_API_URL ||
+    "https://disaster-relief-coordination-system-0z00.onrender.com/api";
 
   // =========================================================
   // FETCH DISTRICTS
@@ -54,9 +55,7 @@ const AlertConfigurationMatrix = () => {
   // =========================================================
   const fetchDistricts = async () => {
     try {
-      const response = await axios.get(
-        `${API_URL}/notifications/districts`
-      );
+      const response = await axios.get(`${API_URL}/notifications/districts`);
 
       setDistricts(response.data.data);
     } catch (error) {
@@ -93,7 +92,7 @@ const AlertConfigurationMatrix = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       setDrafts(response.data.data || []);
@@ -101,8 +100,7 @@ const AlertConfigurationMatrix = () => {
       console.error("Error fetching drafts:", error);
 
       toast.error(
-        error.response?.data?.message ||
-          "Failed to load alert drafts"
+        error.response?.data?.message || "Failed to load alert drafts",
       );
     } finally {
       setLoading(false);
@@ -121,17 +119,14 @@ const AlertConfigurationMatrix = () => {
         if (checked) {
           return {
             ...previous,
-            targetGroups: [
-              ...previous.targetGroups,
-              value,
-            ],
+            targetGroups: [...previous.targetGroups, value],
           };
         }
 
         return {
           ...previous,
           targetGroups: previous.targetGroups.filter(
-            (group) => group !== value
+            (group) => group !== value,
           ),
         };
       });
@@ -191,7 +186,7 @@ const AlertConfigurationMatrix = () => {
       toast.success(
         editingId
           ? "Alert updated successfully!"
-          : "Alert draft created successfully!"
+          : "Alert draft created successfully!",
       );
 
       // Reset form
@@ -202,10 +197,7 @@ const AlertConfigurationMatrix = () => {
     } catch (error) {
       console.error("Error saving alert:", error);
 
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to save alert"
-      );
+      toast.error(error.response?.data?.message || "Failed to save alert");
     } finally {
       setLoading(false);
     }
@@ -249,7 +241,7 @@ const AlertConfigurationMatrix = () => {
   // =========================================================
   const handleDelete = async (id) => {
     const confirmed = window.confirm(
-      "Are you sure you want to delete this alert draft?"
+      "Are you sure you want to delete this alert draft?",
     );
 
     if (!confirmed) {
@@ -259,14 +251,11 @@ const AlertConfigurationMatrix = () => {
     try {
       setLoading(true);
 
-      await axios.delete(
-        `${API_URL}/notifications/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await axios.delete(`${API_URL}/notifications/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       toast.success("Alert draft deleted successfully");
 
@@ -274,10 +263,7 @@ const AlertConfigurationMatrix = () => {
     } catch (error) {
       console.error("Error deleting alert:", error);
 
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to delete alert"
-      );
+      toast.error(error.response?.data?.message || "Failed to delete alert");
     } finally {
       setLoading(false);
     }
@@ -347,7 +333,6 @@ const AlertConfigurationMatrix = () => {
 
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
-
       {/* =====================================================
           FIXED TOP NAVBAR
           ===================================================== */}
@@ -372,10 +357,7 @@ const AlertConfigurationMatrix = () => {
           overflow-y-auto
         "
       >
-        <AdminSidebar
-          open={sidebarOpen}
-          setOpen={setSidebarOpen}
-        />
+        <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
       </div>
 
       {/* =====================================================
@@ -390,7 +372,6 @@ const AlertConfigurationMatrix = () => {
         "
       >
         <div className="p-4 sm:p-6 lg:p-8">
-
           {/* Mobile menu button */}
           <button
             onClick={() => setSidebarOpen(true)}
@@ -420,8 +401,8 @@ const AlertConfigurationMatrix = () => {
             </h1>
 
             <p className="mt-2 text-gray-500">
-              Create, manage, and review emergency alert
-              configurations for disaster response.
+              Create, manage, and review emergency alert configurations for
+              disaster response.
             </p>
           </div>
 
@@ -442,22 +423,16 @@ const AlertConfigurationMatrix = () => {
           >
             <div className="mb-6">
               <h2 className="text-xl font-bold text-[#222831]">
-                {editingId
-                  ? "Edit Alert Draft"
-                  : "Create Alert Draft"}
+                {editingId ? "Edit Alert Draft" : "Create Alert Draft"}
               </h2>
 
               <p className="mt-1 text-sm text-gray-500">
-                Configure the alert message, affected district,
-                severity, and target recipient groups.
+                Configure the alert message, affected district, severity, and
+                target recipient groups.
               </p>
             </div>
 
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-6"
-            >
-
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Message */}
               <div>
                 <label
@@ -506,7 +481,6 @@ const AlertConfigurationMatrix = () => {
 
               {/* District + Severity */}
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-
                 {/* District */}
                 <div>
                   <label
@@ -544,15 +518,10 @@ const AlertConfigurationMatrix = () => {
                       focus:ring-[#00ADB5]/20
                     "
                   >
-                    <option value="">
-                      Select a district
-                    </option>
+                    <option value="">Select a district</option>
 
                     {districts.map((district) => (
-                      <option
-                        key={district}
-                        value={district}
-                      >
+                      <option key={district} value={district}>
                         {district}
                       </option>
                     ))}
@@ -596,17 +565,11 @@ const AlertConfigurationMatrix = () => {
                       focus:ring-[#00ADB5]/20
                     "
                   >
-                    <option value="Advisory">
-                      Advisory
-                    </option>
+                    <option value="Advisory">Advisory</option>
 
-                    <option value="Warning">
-                      Warning
-                    </option>
+                    <option value="Warning">Warning</option>
 
-                    <option value="Critical">
-                      Critical
-                    </option>
+                    <option value="Critical">Critical</option>
                   </select>
                 </div>
               </div>
@@ -626,12 +589,7 @@ const AlertConfigurationMatrix = () => {
                 </label>
 
                 <div className="flex flex-wrap gap-4">
-
-                  {[
-                    "Volunteers",
-                    "Donors",
-                    "All",
-                  ].map((group) => (
+                  {["Volunteers", "Donors", "All"].map((group) => (
                     <label
                       key={group}
                       className="
@@ -651,9 +609,7 @@ const AlertConfigurationMatrix = () => {
                         type="checkbox"
                         name="targetGroups"
                         value={group}
-                        checked={formData.targetGroups.includes(
-                          group
-                        )}
+                        checked={formData.targetGroups.includes(group)}
                         onChange={handleInputChange}
                         className="
                           h-4
@@ -750,7 +706,6 @@ const AlertConfigurationMatrix = () => {
             </h2>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-
               {/* Status */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -780,25 +735,15 @@ const AlertConfigurationMatrix = () => {
                     focus:ring-[#00ADB5]/20
                   "
                 >
-                  <option value="">
-                    All Statuses
-                  </option>
+                  <option value="">All Statuses</option>
 
-                  <option value="draft">
-                    Draft
-                  </option>
+                  <option value="draft">Draft</option>
 
-                  <option value="sent">
-                    Sent
-                  </option>
+                  <option value="sent">Sent</option>
 
-                  <option value="failed">
-                    Failed
-                  </option>
+                  <option value="failed">Failed</option>
 
-                  <option value="cancelled">
-                    Cancelled
-                  </option>
+                  <option value="cancelled">Cancelled</option>
                 </select>
               </div>
 
@@ -831,15 +776,10 @@ const AlertConfigurationMatrix = () => {
                     focus:ring-[#00ADB5]/20
                   "
                 >
-                  <option value="">
-                    All Districts
-                  </option>
+                  <option value="">All Districts</option>
 
                   {districts.map((district) => (
-                    <option
-                      key={district}
-                      value={district}
-                    >
+                    <option key={district} value={district}>
                       {district}
                     </option>
                   ))}
@@ -875,21 +815,13 @@ const AlertConfigurationMatrix = () => {
                     focus:ring-[#00ADB5]/20
                   "
                 >
-                  <option value="">
-                    All Severities
-                  </option>
+                  <option value="">All Severities</option>
 
-                  <option value="Advisory">
-                    Advisory
-                  </option>
+                  <option value="Advisory">Advisory</option>
 
-                  <option value="Warning">
-                    Warning
-                  </option>
+                  <option value="Warning">Warning</option>
 
-                  <option value="Critical">
-                    Critical
-                  </option>
+                  <option value="Critical">Critical</option>
                 </select>
               </div>
             </div>
@@ -957,9 +889,7 @@ const AlertConfigurationMatrix = () => {
               </div>
             ) : drafts.length === 0 ? (
               <div className="p-10 text-center">
-                <div className="mb-2 text-4xl">
-                  📭
-                </div>
+                <div className="mb-2 text-4xl">📭</div>
 
                 <p className="font-medium text-gray-700">
                   No alert drafts found
@@ -975,10 +905,8 @@ const AlertConfigurationMatrix = () => {
                  ================================================= */
               <div className="overflow-x-auto">
                 <table className="min-w-full">
-
                   <thead className="bg-gray-50">
                     <tr>
-
                       <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                         Message
                       </th>
@@ -1006,18 +934,15 @@ const AlertConfigurationMatrix = () => {
                       <th className="whitespace-nowrap px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
                         Actions
                       </th>
-
                     </tr>
                   </thead>
 
                   <tbody className="divide-y divide-gray-100">
-
                     {drafts.map((draft) => (
                       <tr
                         key={draft._id}
                         className="transition hover:bg-gray-50"
                       >
-
                         {/* Message */}
                         <td className="max-w-sm px-6 py-5">
                           <div
@@ -1049,9 +974,7 @@ const AlertConfigurationMatrix = () => {
                               py-1
                               text-xs
                               font-semibold
-                              ${getSeverityColor(
-                                draft.severity
-                              )}
+                              ${getSeverityColor(draft.severity)}
                             `}
                           >
                             {draft.severity}
@@ -1060,9 +983,7 @@ const AlertConfigurationMatrix = () => {
 
                         {/* Target Groups */}
                         <td className="px-6 py-5 text-sm text-gray-700">
-                          {Array.isArray(
-                            draft.targetGroups
-                          )
+                          {Array.isArray(draft.targetGroups)
                             ? draft.targetGroups.join(", ")
                             : draft.targetGroups}
                         </td>
@@ -1077,9 +998,7 @@ const AlertConfigurationMatrix = () => {
                               py-1
                               text-xs
                               font-semibold
-                              ${getStatusBadge(
-                                draft.status
-                              )}
+                              ${getStatusBadge(draft.status)}
                             `}
                           >
                             {draft.status}
@@ -1089,23 +1008,17 @@ const AlertConfigurationMatrix = () => {
                         {/* Created */}
                         <td className="whitespace-nowrap px-6 py-5 text-sm text-gray-500">
                           {draft.createdAt
-                            ? new Date(
-                                draft.createdAt
-                              ).toLocaleDateString()
+                            ? new Date(draft.createdAt).toLocaleDateString()
                             : "-"}
                         </td>
 
                         {/* Actions */}
                         <td className="whitespace-nowrap px-6 py-5 text-right">
-
                           {draft.status === "draft" ? (
                             <div className="flex justify-end gap-2">
-
                               <button
                                 type="button"
-                                onClick={() =>
-                                  handleEdit(draft)
-                                }
+                                onClick={() => handleEdit(draft)}
                                 className="
                                   rounded-lg
                                   px-3
@@ -1122,11 +1035,7 @@ const AlertConfigurationMatrix = () => {
 
                               <button
                                 type="button"
-                                onClick={() =>
-                                  handleDelete(
-                                    draft._id
-                                  )
-                                }
+                                onClick={() => handleDelete(draft._id)}
                                 className="
                                   rounded-lg
                                   px-3
@@ -1140,29 +1049,22 @@ const AlertConfigurationMatrix = () => {
                               >
                                 Delete
                               </button>
-
                             </div>
                           ) : draft.status === "sent" ? (
                             <span className="text-sm text-gray-400">
                               ✓ Sent
                             </span>
                           ) : (
-                            <span className="text-sm text-gray-400">
-                              —
-                            </span>
+                            <span className="text-sm text-gray-400">—</span>
                           )}
-
                         </td>
-
                       </tr>
                     ))}
-
                   </tbody>
                 </table>
               </div>
             )}
           </div>
-
         </div>
       </main>
     </div>

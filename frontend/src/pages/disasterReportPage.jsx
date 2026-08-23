@@ -85,7 +85,10 @@ export default function DisasterReportPage() {
       };
 
       // Send to your backend endpoint
-      await axios.post("http://localhost:8000/api/reports", payload);
+      await axios.post(
+        "https://disaster-relief-coordination-system-0z00.onrender.com/api/reports",
+        payload,
+      );
 
       setFeedback({
         type: "success",
