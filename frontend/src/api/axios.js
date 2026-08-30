@@ -1,16 +1,41 @@
 import axios from "axios";
+import API_BASE_URL from "../config/api";
 
-// central axios instance to stop repeating baseURL/headers everywhere
 const api = axios.create({
-  baseURL: "http://localhost:8000/api",
+  baseURL: API_BASE_URL,
+  timeout: 30000,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// grabs the token off localStorage on every request instead of threading it
-// through props/context -- keeps VolunteerRegistration/VolunteerProfile simple
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === "ECONNABORTED") {
+      console.error("API request timed out.");
+    }
+
+    if (!error.response) {
+      console.error("Cannot connect to backend:", error.message);
+    }
+
+    return Promise.reject(error);
+  },
+);
 
 export default api;

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 
+import Navbar from "../../components/Navbar";
 import AdminSidebar from "../../components/AdminSidebar";
 import ShelterKpiCards from "../../components/shelter/ShelterKpiCards";
 import ShelterFilterBar from "../../components/shelter/ShelterFilterBar";
@@ -13,11 +14,19 @@ import { useShelterOperations } from "../../hooks/useShelterOperations";
 import { fetchCoordinatesOnSubmit } from "../../utils/osmgeocode";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://disaster-relief-coordination-system-kmf2.onrender.com";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
-  return token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+
+  return token
+    ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    : {};
 };
 
 const SUPPLY_CATEGORIES = [
@@ -52,6 +61,7 @@ const INITIAL_FORM_STATE = {
 
 export default function AdminShelterManagement() {
   const { toast, showNotification } = useToast();
+
   const {
     shelters,
     loading,
@@ -70,8 +80,16 @@ export default function AdminShelterManagement() {
   const handleSupplyChange = (index, field, value) => {
     setFormData((prev) => {
       const updated = [...prev.criticalSupplies];
-      updated[index] = { ...updated[index], [field]: value };
-      return { ...prev, criticalSupplies: updated };
+
+      updated[index] = {
+        ...updated[index],
+        [field]: value,
+      };
+
+      return {
+        ...prev,
+        criticalSupplies: updated,
+      };
     });
   };
 
@@ -92,6 +110,7 @@ export default function AdminShelterManagement() {
       division: loc.division,
       district: loc.district,
     }));
+
     if (loc.district || loc.division) {
       const coords = await fetchCoordinatesOnSubmit({
         division: loc.division,
@@ -99,6 +118,7 @@ export default function AdminShelterManagement() {
         latitude: null,
         longitude: null,
       });
+
       setFormData((prev) => ({
         ...prev,
         latitude: coords.latitude,
@@ -109,10 +129,12 @@ export default function AdminShelterManagement() {
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
+
     const coords = await fetchCoordinatesOnSubmit({
       ...formData,
       manualAddress: formData.address,
     });
+
     const payload = {
       ...formData,
       latitude: Number(coords.latitude),
@@ -131,9 +153,12 @@ export default function AdminShelterManagement() {
         payload,
         getAuthHeaders(),
       );
+
       setIsCreateOpen(false);
       setFormData(INITIAL_FORM_STATE);
+
       showNotification("Shelter registered successfully!");
+
       refreshShelters();
     } catch (err) {
       showNotification(
@@ -145,6 +170,7 @@ export default function AdminShelterManagement() {
 
   const handleUpdateSubmit = async (e) => {
     e.preventDefault();
+
     const payload = {
       managerName: formData.managerName,
       contactPhone: formData.contactPhone,
@@ -165,9 +191,12 @@ export default function AdminShelterManagement() {
         payload,
         getAuthHeaders(),
       );
+
       setIsUpdateOpen(false);
       setSelectedShelterId(null);
+
       showNotification("Shelter information updated");
+
       refreshShelters();
     } catch (err) {
       showNotification(
@@ -179,112 +208,265 @@ export default function AdminShelterManagement() {
 
   const openUpdateModal = (shelter) => {
     setSelectedShelterId(shelter._id);
+
     setFormData({
       managerName: shelter.managerName || "",
       contactPhone: shelter.contactPhone || "",
       emergencyAltPhone: shelter.emergencyAltPhone || "",
       occupantCount: shelter.occupantCount || 0,
       capacity: shelter.capacity || 100,
+
       criticalSupplies: SUPPLY_CATEGORIES.map((cat) => {
         const existing = shelter.criticalSupplies?.find(
           (s) => s.category === cat,
         );
+
         return existing
           ? { ...existing }
-          : { category: cat, status: "ADEQUATE", quantityNeeded: "" };
+          : {
+              category: cat,
+              status: "ADEQUATE",
+              quantityNeeded: "",
+            };
       }),
     });
+
     setIsUpdateOpen(true);
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-50 font-sans text-slate-800 relative">
-      {toast.show && (
-        <div
-          className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl shadow-xl text-white text-sm font-bold flex items-center gap-2 ${toast.type === "error" ? "bg-red-600" : "bg-emerald-600"}`}
-        >
-          <span>{toast.type === "error" ? "⚠️" : "✅"}</span>
-          <span>{toast.message}</span>
-        </div>
-      )}
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
+      {/* =====================================================
+          NAVBAR
+      ===================================================== */}
+
+      <div className="fixed left-0 right-0 top-0 z-[60]">
+        <Navbar setSidebarOpen={setSidebarOpen} />
+      </div>
+
+      {/* =====================================================
+          SIDEBAR
+      ===================================================== */}
 
       <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
 
-      <div className="flex-1 w-full max-w-[100vw] md:max-w-none flex flex-col h-screen overflow-y-auto">
-        <div className="p-6 lg:p-8 max-w-7xl w-full mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="md:hidden p-2 bg-slate-200 rounded hover:bg-slate-300"
+      {/* =====================================================
+          MAIN DASHBOARD
+          Starts BELOW navbar and BESIDE fixed sidebar
+      ===================================================== */}
+
+      <main
+        className="
+          min-h-screen
+          pt-[64px]
+          md:ml-64
+        "
+      >
+        <div className="w-full px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+          <div className="mx-auto w-full max-w-7xl">
+            {/* =================================================
+                TOAST
+            ================================================= */}
+
+            {toast.show && (
+              <div
+                className={`
+                  fixed
+                  right-4
+                  top-20
+                  z-[100]
+                  flex
+                  items-center
+                  gap-2
+                  rounded-xl
+                  px-5
+                  py-3
+                  text-sm
+                  font-bold
+                  text-white
+                  shadow-xl
+                  sm:right-6
+                  ${toast.type === "error" ? "bg-red-600" : "bg-emerald-600"}
+                `}
               >
-                <svg
-                  className="w-6 h-6 text-slate-700"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                <span>{toast.type === "error" ? "⚠️" : "✅"}</span>
+
+                <span>{toast.message}</span>
+              </div>
+            )}
+
+            {/* =================================================
+                PAGE HEADER
+            ================================================= */}
+
+            <div
+              className="
+                mb-6
+                flex
+                flex-col
+                gap-4
+                sm:mb-8
+                sm:flex-row
+                sm:items-center
+                sm:justify-between
+              "
+            >
+              <div className="min-w-0">
+                <h1
+                  className="
+                    text-xl
+                    font-bold
+                    text-slate-900
+                    sm:text-2xl
+                    lg:text-3xl
+                  "
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  ></path>
-                </svg>
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">
                   Shelter Operations Dashboard
                 </h1>
-                <p className="text-sm text-slate-500">
+
+                <p
+                  className="
+                    mt-1
+                    max-w-2xl
+                    text-xs
+                    leading-relaxed
+                    text-slate-500
+                    sm:text-sm
+                  "
+                >
                   Monitor live occupancy, manager contacts, and supply
                   shortages.
                 </p>
               </div>
+
+              {/* Register Shelter */}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData(INITIAL_FORM_STATE);
+                  setIsCreateOpen(true);
+                }}
+                className="
+                  inline-flex
+                  min-h-10
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-xl
+                  bg-[#00ADB5]
+                  px-4
+                  py-2
+                  text-sm
+                  font-bold
+                  text-white
+                  shadow-sm
+                  transition
+                  hover:bg-[#0097A0]
+                  active:scale-[0.98]
+                "
+              >
+                + Register Shelter
+              </button>
             </div>
 
-            <button
-              onClick={() => {
-                setFormData(INITIAL_FORM_STATE);
-                setIsCreateOpen(true);
-              }}
-              className="bg-[#00ADB5] hover:bg-[#0097A0] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm"
-            >
-              + Register Shelter
-            </button>
-          </div>
+            {/* =================================================
+                KPI CARDS
+            ================================================= */}
 
-          <ShelterKpiCards metrics={metrics} />
-          <ShelterFilterBar {...filters} />
+            <section className="mb-6 min-w-0 sm:mb-8">
+              <ShelterKpiCards metrics={metrics} />
+            </section>
 
-          {loading ? (
-            <div className="flex justify-center p-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00ADB5]"></div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-12">
-              {shelters.map((shelter) => (
-                <ShelterCard
-                  key={shelter._id}
-                  shelter={shelter}
-                  onOpenUpdate={openUpdateModal}
-                  onDelete={deleteShelter}
+            {/* =================================================
+                FILTER BAR
+            ================================================= */}
+
+            <section className="mb-6 min-w-0 sm:mb-8">
+              <ShelterFilterBar {...filters} />
+            </section>
+
+            {/* =================================================
+                SHELTERS
+            ================================================= */}
+
+            {loading ? (
+              <div
+                className="
+                  flex
+                  min-h-[300px]
+                  items-center
+                  justify-center
+                  rounded-2xl
+                  border
+                  border-slate-200
+                  bg-white
+                  shadow-sm
+                "
+              >
+                <div
+                  className="
+                    h-9
+                    w-9
+                    animate-spin
+                    rounded-full
+                    border-4
+                    border-[#00ADB5]/20
+                    border-t-[#00ADB5]
+                  "
                 />
-              ))}
-              {shelters.length === 0 && (
-                <div className="col-span-full py-16 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">
-                  <p className="text-base font-semibold text-slate-700">
-                    No shelters match your filter selection.
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Try clearing search or filters.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+              </div>
+            ) : (
+              <div
+                className="
+                  grid
+                  min-w-0
+                  grid-cols-1
+                  gap-5
+                  pb-10
+                  xl:grid-cols-2
+                "
+              >
+                {shelters.map((shelter) => (
+                  <ShelterCard
+                    key={shelter._id}
+                    shelter={shelter}
+                    onOpenUpdate={openUpdateModal}
+                    onDelete={deleteShelter}
+                  />
+                ))}
+
+                {shelters.length === 0 && (
+                  <div
+                    className="
+                      col-span-full
+                      rounded-2xl
+                      border
+                      border-slate-200
+                      bg-white
+                      px-6
+                      py-16
+                      text-center
+                    "
+                  >
+                    <p className="text-base font-semibold text-slate-700">
+                      No shelters match your filter selection.
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-400">
+                      Try clearing search or filters.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </main>
+
+      {/* =====================================================
+          CREATE SHELTER MODAL
+      ===================================================== */}
 
       <CreateShelterModal
         isOpen={isCreateOpen}
@@ -295,6 +477,11 @@ export default function AdminShelterManagement() {
         onLocationChange={handleLocationChange}
         onSupplyChange={handleSupplyChange}
       />
+
+      {/* =====================================================
+          UPDATE SHELTER MODAL
+      ===================================================== */}
+
       <UpdateShelterModal
         isOpen={isUpdateOpen}
         onClose={() => setIsUpdateOpen(false)}

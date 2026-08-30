@@ -2,7 +2,7 @@ import axios from "axios";
 
 const API_URL =
   import.meta.env.VITE_NOTIFICATION_API_URL ||
-  "http://localhost:8000/api/notifications";
+  "https://disaster-relief-coordination-system-kmf2.onrender.com/api/notifications";
 
 const api = axios.create({
   baseURL: API_URL,

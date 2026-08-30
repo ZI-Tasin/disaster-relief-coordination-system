@@ -1,362 +1,306 @@
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
-import { toast } from "react-hot-toast";
 
 import Navbar from "../../components/Navbar";
 import AdminSidebar from "../../components/AdminSidebar";
-import { useAuth } from "../../context/AuthContext";
+import ShelterKpiCards from "../../components/shelter/ShelterKpiCards";
+import ShelterFilterBar from "../../components/shelter/ShelterFilterBar";
+import ShelterCard from "../../components/shelter/ShelterCard";
+import CreateShelterModal from "../../components/shelter/CreateShelterModal";
+import UpdateShelterModal from "../../components/shelter/UpdateShelterModal";
 
-const AlertConfigurationMatrix = () => {
-  const { token } = useAuth();
+import { useToast } from "../../hooks/useToast";
+import { useShelterOperations } from "../../hooks/useShelterOperations";
+import { fetchCoordinatesOnSubmit } from "../../utils/osmgeocode";
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://disaster-relief-coordination-system-kmf2.onrender.com";
+
+const getAuthHeaders = () => {
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("gontobbo_token");
+
+  return token
+    ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    : {};
+};
+
+const SUPPLY_CATEGORIES = [
+  "Drinking Water",
+  "Dry Food / Rations",
+  "Medical Supplies / First Aid",
+  "Baby Food & Formula",
+  "Blankets & Bedding",
+  "Sanitation & Hygiene Kits",
+  "Emergency Power / Fuel",
+  "Other",
+];
+
+const createInitialFormState = () => ({
+  name: "",
+  address: "",
+  division: "",
+  district: "",
+  latitude: 23.685,
+  longitude: 90.3563,
+  managerName: "",
+  contactPhone: "",
+  emergencyAltPhone: "",
+  occupantCount: 0,
+  capacity: 100,
+  criticalSupplies: SUPPLY_CATEGORIES.map((category) => ({
+    category,
+    status: "ADEQUATE",
+    quantityNeeded: "",
+  })),
+});
+
+export default function AdminShelterManagement() {
+  const { toast, showNotification } = useToast();
+
+  const {
+    shelters,
+    loading,
+    metrics,
+    filters,
+    deleteShelter,
+    refreshShelters,
+  } = useShelterOperations(showNotification);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [formData, setFormData] = useState(createInitialFormState);
+  const [selectedShelterId, setSelectedShelterId] = useState(null);
 
-  const [formData, setFormData] = useState({
-    messageBody: "",
-    district: "",
-    severity: "Advisory",
-    targetGroups: [],
-  });
+  const handleSupplyChange = (index, field, value) => {
+    setFormData((previous) => {
+      const updatedSupplies = [...previous.criticalSupplies];
 
-  const [districts, setDistricts] = useState([]);
-  const [drafts, setDrafts] = useState([]);
+      updatedSupplies[index] = {
+        ...updatedSupplies[index],
+        [field]: value,
+      };
 
-  const [loading, setLoading] = useState(false);
-  const [editingId, setEditingId] = useState(null);
+      return {
+        ...previous,
+        criticalSupplies: updatedSupplies,
+      };
+    });
+  };
 
-  const [filter, setFilter] = useState({
-    status: "draft",
-    district: "",
-    severity: "",
-  });
+  const handleMarkAllAdequate = () => {
+    setFormData((previous) => ({
+      ...previous,
+      criticalSupplies: previous.criticalSupplies.map((supply) => ({
+        ...supply,
+        status: "ADEQUATE",
+        quantityNeeded: "",
+      })),
+    }));
+  };
 
-  const API_URL =
-    import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+  const handleLocationChange = async (location) => {
+    setFormData((previous) => ({
+      ...previous,
+      division: location.division || "",
+      district: location.district || "",
+    }));
 
-  // =========================================================
-  // FETCH DISTRICTS
-  // Only run once when page loads
-  // =========================================================
-  useEffect(() => {
-    fetchDistricts();
-  }, []);
+    if (location.district || location.division) {
+      try {
+        const coords = await fetchCoordinatesOnSubmit({
+          division: location.division,
+          district: location.district,
+          latitude: null,
+          longitude: null,
+        });
 
-  // =========================================================
-  // FETCH DRAFTS
-  // Run whenever filters change
-  // =========================================================
-  useEffect(() => {
-    fetchDrafts();
-  }, [filter]);
-
-  // =========================================================
-  // FETCH DISTRICT LIST
-  // =========================================================
-  const fetchDistricts = async () => {
-    try {
-      const response = await axios.get(
-        `${API_URL}/notifications/districts`
-      );
-
-      setDistricts(response.data.data);
-    } catch (error) {
-      console.error("Error fetching districts:", error);
-
-      toast.error("Failed to load districts");
+        setFormData((previous) => ({
+          ...previous,
+          latitude: Number(coords.latitude),
+          longitude: Number(coords.longitude),
+        }));
+      } catch (error) {
+        console.error("Failed to fetch shelter coordinates:", error);
+      }
     }
   };
 
-  // =========================================================
-  // FETCH ALERT DRAFTS
-  // =========================================================
-  const fetchDrafts = async () => {
+  const handleCreateSubmit = async (event) => {
+    event.preventDefault();
+
     try {
-      setLoading(true);
+      const coords = await fetchCoordinatesOnSubmit({
+        ...formData,
+        manualAddress: formData.address,
+      });
 
-      const params = new URLSearchParams();
+      const payload = {
+        ...formData,
 
-      if (filter.status) {
-        params.append("status", filter.status);
-      }
+        latitude: Number(coords.latitude),
+        longitude: Number(coords.longitude),
 
-      if (filter.district) {
-        params.append("district", filter.district);
-      }
+        occupantCount: Number(formData.occupantCount),
+        capacity: Number(formData.capacity),
 
-      if (filter.severity) {
-        params.append("severity", filter.severity);
-      }
+        criticalSupplies: formData.criticalSupplies.map((supply) => ({
+          ...supply,
+          quantityNeeded: supply.quantityNeeded?.toString().trim()
+            ? supply.quantityNeeded
+            : undefined,
+        })),
+      };
 
-      const response = await axios.get(
-        `${API_URL}/notifications?${params.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      await axios.post(
+        `${API_BASE_URL}/api/shelters`,
+        payload,
+        getAuthHeaders(),
       );
 
-      setDrafts(response.data.data || []);
+      setIsCreateOpen(false);
+      setFormData(createInitialFormState());
+
+      showNotification("Shelter registered successfully!");
+
+      await refreshShelters();
     } catch (error) {
-      console.error("Error fetching drafts:", error);
+      console.error("Failed to create shelter:", error);
 
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to load alert drafts"
+      showNotification(
+        error.response?.data?.message || "Failed to create shelter",
+        "error",
       );
-    } finally {
-      setLoading(false);
     }
   };
 
-  // =========================================================
-  // HANDLE FORM INPUT
-  // =========================================================
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  const handleUpdateSubmit = async (event) => {
+    event.preventDefault();
 
-    // Target group checkbox
-    if (type === "checkbox" && name === "targetGroups") {
-      setFormData((previous) => {
-        if (checked) {
+    if (!selectedShelterId) {
+      showNotification("No shelter selected", "error");
+      return;
+    }
+
+    const payload = {
+      managerName: formData.managerName,
+      contactPhone: formData.contactPhone,
+      emergencyAltPhone: formData.emergencyAltPhone,
+
+      occupantCount: Number(formData.occupantCount),
+      capacity: Number(formData.capacity),
+
+      criticalSupplies: formData.criticalSupplies.map((supply) => ({
+        ...supply,
+        quantityNeeded: supply.quantityNeeded?.toString().trim()
+          ? supply.quantityNeeded
+          : undefined,
+      })),
+    };
+
+    try {
+      await axios.put(
+        `${API_BASE_URL}/api/shelters/${selectedShelterId}`,
+        payload,
+        getAuthHeaders(),
+      );
+
+      setIsUpdateOpen(false);
+      setSelectedShelterId(null);
+      setFormData(createInitialFormState());
+
+      showNotification("Shelter information updated");
+
+      await refreshShelters();
+    } catch (error) {
+      console.error("Failed to update shelter:", error);
+
+      showNotification(
+        error.response?.data?.message || "Failed to update shelter",
+        "error",
+      );
+    }
+  };
+
+  const openUpdateModal = (shelter) => {
+    setSelectedShelterId(shelter._id);
+
+    setFormData({
+      name: shelter.name || "",
+      address: shelter.address || "",
+      division: shelter.division || "",
+      district: shelter.district || "",
+
+      latitude:
+        shelter.latitude !== undefined && shelter.latitude !== null
+          ? shelter.latitude
+          : 23.685,
+
+      longitude:
+        shelter.longitude !== undefined && shelter.longitude !== null
+          ? shelter.longitude
+          : 90.3563,
+
+      managerName: shelter.managerName || "",
+      contactPhone: shelter.contactPhone || "",
+      emergencyAltPhone: shelter.emergencyAltPhone || "",
+
+      occupantCount: shelter.occupantCount || 0,
+      capacity: shelter.capacity || 100,
+
+      criticalSupplies: SUPPLY_CATEGORIES.map((category) => {
+        const existingSupply = shelter.criticalSupplies?.find(
+          (supply) => supply.category === category,
+        );
+
+        if (existingSupply) {
           return {
-            ...previous,
-            targetGroups: [
-              ...previous.targetGroups,
-              value,
-            ],
+            ...existingSupply,
+            quantityNeeded: existingSupply.quantityNeeded || "",
           };
         }
 
         return {
-          ...previous,
-          targetGroups: previous.targetGroups.filter(
-            (group) => group !== value
-          ),
+          category,
+          status: "ADEQUATE",
+          quantityNeeded: "",
         };
-      });
-
-      return;
-    }
-
-    // Normal input/select
-    setFormData((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
-  };
-
-  // =========================================================
-  // CREATE / UPDATE ALERT
-  // =========================================================
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Validation
-    if (!formData.messageBody.trim()) {
-      toast.error("Please enter a message body");
-      return;
-    }
-
-    if (!formData.district) {
-      toast.error("Please select a district");
-      return;
-    }
-
-    if (!formData.severity) {
-      toast.error("Please select severity");
-      return;
-    }
-
-    if (formData.targetGroups.length === 0) {
-      toast.error("Please select at least one target group");
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const url = editingId
-        ? `${API_URL}/notifications/${editingId}`
-        : `${API_URL}/notifications`;
-
-      const method = editingId ? "patch" : "post";
-
-      await axios[method](url, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      toast.success(
-        editingId
-          ? "Alert updated successfully!"
-          : "Alert draft created successfully!"
-      );
-
-      // Reset form
-      resetForm();
-
-      // Refresh drafts
-      await fetchDrafts();
-    } catch (error) {
-      console.error("Error saving alert:", error);
-
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to save alert"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // =========================================================
-  // EDIT ALERT
-  // =========================================================
-  const handleEdit = (draft) => {
-    setFormData({
-      messageBody: draft.messageBody || "",
-      district: draft.district || "",
-      severity: draft.severity || "Advisory",
-
-      // Make sure old data doesn't break if targetGroups
-      // somehow comes as a string
-      targetGroups: Array.isArray(draft.targetGroups)
-        ? draft.targetGroups
-        : draft.targetGroups
-          ? [draft.targetGroups]
-          : [],
+      }),
     });
 
-    setEditingId(draft._id);
-
-    // Scroll to form
-    setTimeout(() => {
-      const formElement = document.getElementById("alertForm");
-
-      if (formElement) {
-        formElement.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }
-    }, 100);
+    setIsUpdateOpen(true);
   };
 
-  // =========================================================
-  // DELETE ALERT
-  // =========================================================
-  const handleDelete = async (id) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this alert draft?"
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      await axios.delete(
-        `${API_URL}/notifications/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      toast.success("Alert draft deleted successfully");
-
-      await fetchDrafts();
-    } catch (error) {
-      console.error("Error deleting alert:", error);
-
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to delete alert"
-      );
-    } finally {
-      setLoading(false);
-    }
+  const handleCloseCreate = () => {
+    setIsCreateOpen(false);
+    setFormData(createInitialFormState());
   };
 
-  // =========================================================
-  // RESET FORM
-  // =========================================================
-  const resetForm = () => {
-    setFormData({
-      messageBody: "",
-      district: "",
-      severity: "Advisory",
-      targetGroups: [],
-    });
-
-    setEditingId(null);
-  };
-
-  // =========================================================
-  // CANCEL EDIT
-  // =========================================================
-  const handleCancel = () => {
-    resetForm();
-  };
-
-  // =========================================================
-  // SEVERITY BADGE
-  // =========================================================
-  const getSeverityColor = (severity) => {
-    switch (severity) {
-      case "Critical":
-        return "bg-red-100 text-red-800";
-
-      case "Warning":
-        return "bg-yellow-100 text-yellow-800";
-
-      case "Advisory":
-        return "bg-blue-100 text-blue-800";
-
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  // =========================================================
-  // STATUS BADGE
-  // =========================================================
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "draft":
-        return "bg-gray-200 text-gray-700";
-
-      case "sent":
-        return "bg-green-100 text-green-800";
-
-      case "failed":
-        return "bg-red-100 text-red-800";
-
-      case "cancelled":
-        return "bg-gray-100 text-gray-500";
-
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
+  const handleCloseUpdate = () => {
+    setIsUpdateOpen(false);
+    setSelectedShelterId(null);
+    setFormData(createInitialFormState());
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA]">
-
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
       {/* =====================================================
           FIXED TOP NAVBAR
           ===================================================== */}
-      <div className="fixed top-0 left-0 right-0 z-50">
+      <div className="fixed top-0 left-0 right-0 z-[60]">
         <Navbar setSidebarOpen={setSidebarOpen} />
       </div>
 
       {/* =====================================================
           FIXED ADMIN SIDEBAR
+          Starts BELOW navbar
           ===================================================== */}
       <div
         className="
@@ -364,11 +308,13 @@ const AlertConfigurationMatrix = () => {
           left-0
           top-16
           bottom-0
-          z-40
+          z-50
+          hidden
           w-64
-          bg-white
           border-r
-          border-gray-200
+          border-slate-200
+          bg-white
+          md:block
           overflow-y-auto
         "
       >
@@ -379,794 +325,237 @@ const AlertConfigurationMatrix = () => {
       </div>
 
       {/* =====================================================
-          MAIN CONTENT
-          Navbar + Sidebar remain fixed
+          MOBILE SIDEBAR
           ===================================================== */}
-      <main
-        className="
-          min-h-screen
-          pt-16
-          md:ml-64
-        "
-      >
-        <div className="p-4 sm:p-6 lg:p-8">
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-[70] md:hidden">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setSidebarOpen(false)}
+          />
 
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setSidebarOpen(true)}
+          <div
             className="
-              mb-5
-              rounded-xl
-              bg-[#30475E]
-              px-4
-              py-2
-              font-medium
-              text-white
-              shadow-sm
-              transition
-              hover:bg-[#222831]
-              md:hidden
+              absolute
+              left-0
+              top-16
+              bottom-0
+              w-72
+              overflow-y-auto
+              bg-white
+              shadow-2xl
             "
           >
-            ☰ Menu
-          </button>
+            <AdminSidebar
+              open={sidebarOpen}
+              setOpen={setSidebarOpen}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          MAIN CONTENT
+          Starts BELOW navbar
+          Leaves room for desktop sidebar
+          ===================================================== */}
+      <main className="min-h-screen pt-16 md:ml-64">
+        <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
+          {/* =================================================
+              TOAST
+              ================================================= */}
+          {toast.show && (
+            <div
+              className={`
+                fixed
+                right-4
+                top-20
+                z-[100]
+                flex
+                max-w-sm
+                items-center
+                gap-2
+                rounded-xl
+                px-5
+                py-3
+                text-sm
+                font-bold
+                text-white
+                shadow-xl
+                sm:right-5
+                ${
+                  toast.type === "error"
+                    ? "bg-red-600"
+                    : "bg-emerald-600"
+                }
+              `}
+            >
+              <span>
+                {toast.type === "error" ? "⚠️" : "✅"}
+              </span>
+
+              <span>{toast.message}</span>
+            </div>
+          )}
 
           {/* =================================================
               PAGE HEADER
               ================================================= */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-[#222831]">
-              Alert Configuration Matrix
-            </h1>
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4">
+              {/* Mobile menu */}
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                className="
+                  mt-1
+                  rounded-xl
+                  bg-[#30475E]
+                  p-2.5
+                  text-white
+                  shadow-sm
+                  transition
+                  hover:bg-[#222831]
+                  md:hidden
+                "
+                aria-label="Open admin menu"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
 
-            <p className="mt-2 text-gray-500">
-              Create, manage, and review emergency alert
-              configurations for disaster response.
-            </p>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+                  Shelter Operations Dashboard
+                </h1>
+
+                <p className="mt-2 max-w-2xl text-sm text-slate-500">
+                  Monitor live occupancy, manager contacts, and supply
+                  shortages.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setFormData(createInitialFormState());
+                setSelectedShelterId(null);
+                setIsCreateOpen(true);
+              }}
+              className="
+                w-full
+                rounded-xl
+                bg-[#00ADB5]
+                px-5
+                py-3
+                text-sm
+                font-bold
+                text-white
+                shadow-sm
+                transition
+                hover:bg-[#0097A0]
+                sm:w-auto
+              "
+            >
+              + Register Shelter
+            </button>
           </div>
 
           {/* =================================================
-              ALERT FORM
+              KPI CARDS
               ================================================= */}
-          <div
-            id="alertForm"
-            className="
-              mb-8
-              max-w-5xl
-              rounded-2xl
-              bg-white
-              p-6
-              shadow-sm
-              sm:p-8
-            "
-          >
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-[#222831]">
-                {editingId
-                  ? "Edit Alert Draft"
-                  : "Create Alert Draft"}
-              </h2>
-
-              <p className="mt-1 text-sm text-gray-500">
-                Configure the alert message, affected district,
-                severity, and target recipient groups.
-              </p>
-            </div>
-
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-6"
-            >
-
-              {/* Message */}
-              <div>
-                <label
-                  htmlFor="messageBody"
-                  className="
-                    mb-2
-                    block
-                    text-sm
-                    font-semibold
-                    text-[#222831]
-                  "
-                >
-                  Alert Message *
-                </label>
-
-                <textarea
-                  id="messageBody"
-                  name="messageBody"
-                  value={formData.messageBody}
-                  onChange={handleInputChange}
-                  rows={5}
-                  maxLength={1600}
-                  required
-                  placeholder="Enter emergency alert message..."
-                  className="
-                    w-full
-                    resize-y
-                    rounded-xl
-                    border
-                    border-gray-300
-                    px-4
-                    py-3
-                    text-sm
-                    outline-none
-                    transition
-                    focus:border-[#00ADB5]
-                    focus:ring-2
-                    focus:ring-[#00ADB5]/20
-                  "
-                />
-
-                <div className="mt-1 text-right text-xs text-gray-500">
-                  {formData.messageBody.length}/1600 characters
-                </div>
-              </div>
-
-              {/* District + Severity */}
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-
-                {/* District */}
-                <div>
-                  <label
-                    htmlFor="district"
-                    className="
-                      mb-2
-                      block
-                      text-sm
-                      font-semibold
-                      text-[#222831]
-                    "
-                  >
-                    District *
-                  </label>
-
-                  <select
-                    id="district"
-                    name="district"
-                    value={formData.district}
-                    onChange={handleInputChange}
-                    required
-                    className="
-                      w-full
-                      rounded-xl
-                      border
-                      border-gray-300
-                      bg-white
-                      px-4
-                      py-3
-                      text-sm
-                      outline-none
-                      transition
-                      focus:border-[#00ADB5]
-                      focus:ring-2
-                      focus:ring-[#00ADB5]/20
-                    "
-                  >
-                    <option value="">
-                      Select a district
-                    </option>
-
-                    {districts.map((district) => (
-                      <option
-                        key={district}
-                        value={district}
-                      >
-                        {district}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Severity */}
-                <div>
-                  <label
-                    htmlFor="severity"
-                    className="
-                      mb-2
-                      block
-                      text-sm
-                      font-semibold
-                      text-[#222831]
-                    "
-                  >
-                    Severity *
-                  </label>
-
-                  <select
-                    id="severity"
-                    name="severity"
-                    value={formData.severity}
-                    onChange={handleInputChange}
-                    required
-                    className="
-                      w-full
-                      rounded-xl
-                      border
-                      border-gray-300
-                      bg-white
-                      px-4
-                      py-3
-                      text-sm
-                      outline-none
-                      transition
-                      focus:border-[#00ADB5]
-                      focus:ring-2
-                      focus:ring-[#00ADB5]/20
-                    "
-                  >
-                    <option value="Advisory">
-                      Advisory
-                    </option>
-
-                    <option value="Warning">
-                      Warning
-                    </option>
-
-                    <option value="Critical">
-                      Critical
-                    </option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Target Groups */}
-              <div>
-                <label
-                  className="
-                    mb-3
-                    block
-                    text-sm
-                    font-semibold
-                    text-[#222831]
-                  "
-                >
-                  Target Recipient Groups *
-                </label>
-
-                <div className="flex flex-wrap gap-4">
-
-                  {[
-                    "Volunteers",
-                    "Donors",
-                    "All",
-                  ].map((group) => (
-                    <label
-                      key={group}
-                      className="
-                        flex
-                        cursor-pointer
-                        items-center
-                        rounded-xl
-                        border
-                        border-gray-200
-                        px-4
-                        py-3
-                        transition
-                        hover:bg-gray-50
-                      "
-                    >
-                      <input
-                        type="checkbox"
-                        name="targetGroups"
-                        value={group}
-                        checked={formData.targetGroups.includes(
-                          group
-                        )}
-                        onChange={handleInputChange}
-                        className="
-                          h-4
-                          w-4
-                          rounded
-                          border-gray-300
-                          text-[#00ADB5]
-                          focus:ring-[#00ADB5]
-                        "
-                      />
-
-                      <span className="ml-2 text-sm text-gray-700">
-                        {group}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Buttons */}
-              <div
-                className="
-                  flex
-                  flex-col
-                  gap-3
-                  border-t
-                  border-gray-200
-                  pt-6
-                  sm:flex-row
-                  sm:justify-end
-                "
-              >
-                {editingId && (
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="
-                      rounded-xl
-                      border
-                      border-gray-300
-                      px-6
-                      py-3
-                      font-semibold
-                      text-gray-700
-                      transition
-                      hover:bg-gray-100
-                    "
-                  >
-                    Cancel
-                  </button>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="
-                    rounded-xl
-                    bg-[#00ADB5]
-                    px-6
-                    py-3
-                    font-semibold
-                    text-white
-                    transition
-                    hover:bg-[#0097A0]
-                    disabled:cursor-not-allowed
-                    disabled:opacity-60
-                  "
-                >
-                  {loading
-                    ? "Saving..."
-                    : editingId
-                      ? "Update Draft"
-                      : "Create Alert Draft"}
-                </button>
-              </div>
-            </form>
-          </div>
+          <ShelterKpiCards metrics={metrics} />
 
           {/* =================================================
               FILTERS
               ================================================= */}
-          <div
-            className="
-              mb-6
-              max-w-5xl
-              rounded-2xl
-              bg-white
-              p-6
-              shadow-sm
-            "
-          >
-            <h2 className="mb-4 text-lg font-bold text-[#222831]">
-              Filter Alert Drafts
-            </h2>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-
-              {/* Status */}
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
-                  Status
-                </label>
-
-                <select
-                  value={filter.status}
-                  onChange={(e) =>
-                    setFilter((previous) => ({
-                      ...previous,
-                      status: e.target.value,
-                    }))
-                  }
-                  className="
-                    w-full
-                    rounded-xl
-                    border
-                    border-gray-300
-                    bg-white
-                    px-4
-                    py-3
-                    text-sm
-                    outline-none
-                    focus:border-[#00ADB5]
-                    focus:ring-2
-                    focus:ring-[#00ADB5]/20
-                  "
-                >
-                  <option value="">
-                    All Statuses
-                  </option>
-
-                  <option value="draft">
-                    Draft
-                  </option>
-
-                  <option value="sent">
-                    Sent
-                  </option>
-
-                  <option value="failed">
-                    Failed
-                  </option>
-
-                  <option value="cancelled">
-                    Cancelled
-                  </option>
-                </select>
-              </div>
-
-              {/* District */}
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
-                  District
-                </label>
-
-                <select
-                  value={filter.district}
-                  onChange={(e) =>
-                    setFilter((previous) => ({
-                      ...previous,
-                      district: e.target.value,
-                    }))
-                  }
-                  className="
-                    w-full
-                    rounded-xl
-                    border
-                    border-gray-300
-                    bg-white
-                    px-4
-                    py-3
-                    text-sm
-                    outline-none
-                    focus:border-[#00ADB5]
-                    focus:ring-2
-                    focus:ring-[#00ADB5]/20
-                  "
-                >
-                  <option value="">
-                    All Districts
-                  </option>
-
-                  {districts.map((district) => (
-                    <option
-                      key={district}
-                      value={district}
-                    >
-                      {district}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Severity */}
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
-                  Severity
-                </label>
-
-                <select
-                  value={filter.severity}
-                  onChange={(e) =>
-                    setFilter((previous) => ({
-                      ...previous,
-                      severity: e.target.value,
-                    }))
-                  }
-                  className="
-                    w-full
-                    rounded-xl
-                    border
-                    border-gray-300
-                    bg-white
-                    px-4
-                    py-3
-                    text-sm
-                    outline-none
-                    focus:border-[#00ADB5]
-                    focus:ring-2
-                    focus:ring-[#00ADB5]/20
-                  "
-                >
-                  <option value="">
-                    All Severities
-                  </option>
-
-                  <option value="Advisory">
-                    Advisory
-                  </option>
-
-                  <option value="Warning">
-                    Warning
-                  </option>
-
-                  <option value="Critical">
-                    Critical
-                  </option>
-                </select>
-              </div>
-            </div>
+          <div className="mt-6">
+            <ShelterFilterBar {...filters} />
           </div>
 
           {/* =================================================
-              DRAFT LIST
+              SHELTER LIST
               ================================================= */}
-          <div
-            className="
-              mb-8
-              max-w-7xl
-              overflow-hidden
-              rounded-2xl
-              bg-white
-              shadow-sm
-            "
-          >
-            {/* Header */}
-            <div
-              className="
-                flex
-                flex-col
-                gap-2
-                border-b
-                border-gray-200
-                px-6
-                py-5
-                sm:flex-row
-                sm:items-center
-                sm:justify-between
-              "
-            >
-              <div>
-                <h2 className="text-xl font-bold text-[#222831]">
-                  Alert Drafts
-                </h2>
-
-                <p className="mt-1 text-sm text-gray-500">
-                  Previously created alert configurations
-                </p>
-              </div>
-
-              <span
-                className="
-                  w-fit
-                  rounded-full
-                  bg-[#00ADB5]/10
-                  px-3
-                  py-1
-                  text-sm
-                  font-semibold
-                  text-[#008F96]
-                "
-              >
-                {drafts.length} draft
-                {drafts.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-
-            {/* Loading */}
+          <div className="mt-6">
             {loading ? (
-              <div className="p-10 text-center text-gray-500">
-                Loading alert drafts...
-              </div>
-            ) : drafts.length === 0 ? (
-              <div className="p-10 text-center">
-                <div className="mb-2 text-4xl">
-                  📭
+              <div className="flex min-h-[250px] items-center justify-center rounded-2xl bg-white shadow-sm">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-9 w-9 animate-spin rounded-full border-4 border-slate-200 border-b-[#00ADB5]" />
+
+                  <p className="text-sm font-medium text-slate-500">
+                    Loading shelters...
+                  </p>
                 </div>
-
-                <p className="font-medium text-gray-700">
-                  No alert drafts found
-                </p>
-
-                <p className="mt-1 text-sm text-gray-500">
-                  Create a new alert configuration above.
-                </p>
               </div>
             ) : (
-              /* =================================================
-                 TABLE
-                 ================================================= */
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
+              <div className="grid grid-cols-1 gap-6 pb-12 xl:grid-cols-2">
+                {shelters.map((shelter) => (
+                  <ShelterCard
+                    key={shelter._id}
+                    shelter={shelter}
+                    onOpenUpdate={openUpdateModal}
+                    onDelete={deleteShelter}
+                  />
+                ))}
 
-                  <thead className="bg-gray-50">
-                    <tr>
+                {shelters.length === 0 && (
+                  <div className="col-span-full rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-sm">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-2xl">
+                      🏠
+                    </div>
 
-                      <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        Message
-                      </th>
+                    <p className="text-base font-semibold text-slate-700">
+                      No shelters match your filter selection.
+                    </p>
 
-                      <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        District
-                      </th>
-
-                      <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        Severity
-                      </th>
-
-                      <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        Target Groups
-                      </th>
-
-                      <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        Status
-                      </th>
-
-                      <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        Created
-                      </th>
-
-                      <th className="whitespace-nowrap px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        Actions
-                      </th>
-
-                    </tr>
-                  </thead>
-
-                  <tbody className="divide-y divide-gray-100">
-
-                    {drafts.map((draft) => (
-                      <tr
-                        key={draft._id}
-                        className="transition hover:bg-gray-50"
-                      >
-
-                        {/* Message */}
-                        <td className="max-w-sm px-6 py-5">
-                          <div
-                            className="
-                              max-w-xs
-                              truncate
-                              text-sm
-                              font-medium
-                              text-gray-800
-                            "
-                            title={draft.messageBody}
-                          >
-                            {draft.messageBody}
-                          </div>
-                        </td>
-
-                        {/* District */}
-                        <td className="whitespace-nowrap px-6 py-5 text-sm text-gray-700">
-                          {draft.district}
-                        </td>
-
-                        {/* Severity */}
-                        <td className="whitespace-nowrap px-6 py-5">
-                          <span
-                            className={`
-                              inline-flex
-                              rounded-full
-                              px-3
-                              py-1
-                              text-xs
-                              font-semibold
-                              ${getSeverityColor(
-                                draft.severity
-                              )}
-                            `}
-                          >
-                            {draft.severity}
-                          </span>
-                        </td>
-
-                        {/* Target Groups */}
-                        <td className="px-6 py-5 text-sm text-gray-700">
-                          {Array.isArray(
-                            draft.targetGroups
-                          )
-                            ? draft.targetGroups.join(", ")
-                            : draft.targetGroups}
-                        </td>
-
-                        {/* Status */}
-                        <td className="whitespace-nowrap px-6 py-5">
-                          <span
-                            className={`
-                              inline-flex
-                              rounded-full
-                              px-3
-                              py-1
-                              text-xs
-                              font-semibold
-                              ${getStatusBadge(
-                                draft.status
-                              )}
-                            `}
-                          >
-                            {draft.status}
-                          </span>
-                        </td>
-
-                        {/* Created */}
-                        <td className="whitespace-nowrap px-6 py-5 text-sm text-gray-500">
-                          {draft.createdAt
-                            ? new Date(
-                                draft.createdAt
-                              ).toLocaleDateString()
-                            : "-"}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="whitespace-nowrap px-6 py-5 text-right">
-
-                          {draft.status === "draft" ? (
-                            <div className="flex justify-end gap-2">
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleEdit(draft)
-                                }
-                                className="
-                                  rounded-lg
-                                  px-3
-                                  py-2
-                                  text-sm
-                                  font-semibold
-                                  text-[#008F96]
-                                  transition
-                                  hover:bg-[#00ADB5]/10
-                                "
-                              >
-                                Edit
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleDelete(
-                                    draft._id
-                                  )
-                                }
-                                className="
-                                  rounded-lg
-                                  px-3
-                                  py-2
-                                  text-sm
-                                  font-semibold
-                                  text-red-600
-                                  transition
-                                  hover:bg-red-50
-                                "
-                              >
-                                Delete
-                              </button>
-
-                            </div>
-                          ) : draft.status === "sent" ? (
-                            <span className="text-sm text-gray-400">
-                              ✓ Sent
-                            </span>
-                          ) : (
-                            <span className="text-sm text-gray-400">
-                              —
-                            </span>
-                          )}
-
-                        </td>
-
-                      </tr>
-                    ))}
-
-                  </tbody>
-                </table>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Try clearing search or filters.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
-
         </div>
       </main>
+
+      {/* =====================================================
+          CREATE SHELTER MODAL
+          ===================================================== */}
+      <CreateShelterModal
+        isOpen={isCreateOpen}
+        onClose={handleCloseCreate}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleCreateSubmit}
+        onLocationChange={handleLocationChange}
+        onSupplyChange={handleSupplyChange}
+      />
+
+      {/* =====================================================
+          UPDATE SHELTER MODAL
+          ===================================================== */}
+      <UpdateShelterModal
+        isOpen={isUpdateOpen}
+        onClose={handleCloseUpdate}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleUpdateSubmit}
+        onSupplyChange={handleSupplyChange}
+        onMarkAllAdequate={handleMarkAllAdequate}
+      />
     </div>
   );
-};
-
-export default AlertConfigurationMatrix;
+}
