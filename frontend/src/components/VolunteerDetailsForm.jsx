@@ -2,11 +2,8 @@ import { useState } from "react";
 import FormInput from "./FormInput";
 import FormSelect from "./FormSelect";
 import SkillChip from "./SkillChip";
-import {
-  bangladeshDistricts,
-  bloodTypes,
-  skillOptions,
-} from "../data/mockData";
+import { bloodTypes, skillOptions } from "../data/mockData";
+import useDistricts from "../hooks/useDistricts";
 
 // Step 2 of the wizard: the OCR-prefilled confirmation form.
 // `ocrData` = { fullName, idNumber } handed down from the upload step.
@@ -22,6 +19,8 @@ export default function VolunteerDetailsForm({
   const [district, setDistrict] = useState("");
   const [bloodType, setBloodType] = useState("");
   const [skills, setSkills] = useState([]); // array of selected skill labels
+
+  const { districtGroups } = useDistricts();
 
   const toggleSkill = (skill) => {
     setSkills((prev) =>
@@ -97,7 +96,7 @@ export default function VolunteerDetailsForm({
           value={district}
           onChange={setDistrict}
           placeholder="Select a district"
-          groups={bangladeshDistricts}
+          groups={districtGroups}
         />
       </div>
 

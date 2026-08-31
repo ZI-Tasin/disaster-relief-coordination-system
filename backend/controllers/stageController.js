@@ -107,6 +107,21 @@ exports.submitStage = async (req, res) => {
         volunteer.assignmentStage = "none";
         volunteer.deliveryStage = null;
         await volunteer.save();
+
+        // Resolve the incident once no volunteer is still working it -- this
+        // is what removes it from the Live Incident Map and from the Task
+        // Board's "Active Disasters" list (both only show status: "verified").
+        if (incident) {
+          const stillActive = await Volunteer.exists({
+            assignedIncident: incident._id,
+            assignmentStage: { $in: ["assigned", "deployed"] },
+          });
+          if (!stillActive) {
+            incident.status = "resolved";
+            await incident.save();
+          }
+        }
+
         return res.status(500).json({
           success: false,
           message: "Mission complete but certificate generation failed.",
@@ -120,6 +135,20 @@ exports.submitStage = async (req, res) => {
       volunteer.assignmentStage = "none";
       volunteer.deliveryStage = null;
       await volunteer.save();
+
+      // Resolve the incident once no volunteer is still working it -- this
+      // is what removes it from the Live Incident Map and from the Task
+      // Board's "Active Disasters" list (both only show status: "verified").
+      if (incident) {
+        const stillActive = await Volunteer.exists({
+          assignedIncident: incident._id,
+          assignmentStage: { $in: ["assigned", "deployed"] },
+        });
+        if (!stillActive) {
+          incident.status = "resolved";
+          await incident.save();
+        }
+      }
 
       // Check if PDF buffer is valid before sending
       if (!pdfBuffer || pdfBuffer.length === 0) {

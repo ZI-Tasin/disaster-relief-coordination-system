@@ -42,8 +42,8 @@ const volunteerSchema = new mongoose.Schema(
       enum: ["Dispatched", "In Transit", "On Site", "Distributed"],
       default: null,
     },
-    // mission history isn't a real model/collection yet -- profile panel
-    // just mocks this on the frontend for now (src/data/mockMissions.js)
+    // mission history is served from the real StageUpdate model via
+    // GET /api/stage-updates/history (no longer mocked on the frontend)
   },
   { timestamps: true },
 );

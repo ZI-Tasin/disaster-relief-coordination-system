@@ -1,25 +1,6 @@
 const axios = require("axios");
 const WeatherLog = require("../models/WeatherLog");
-
-// TODO(M1 integration): replace with a real fetch once M1's endpoint exists, e.g.
-// const { data } = await axios.get(`${M1_BASE_URL}/reports/active`);
-// keep the response shape (id/title/district/lat/lng) the same so the frontend doesn't change.
-const MOCK_INCIDENTS = [
-  {
-    id: "inc1",
-    title: "Sylhet Flood",
-    district: "Sylhet",
-    lat: 24.9,
-    lng: 91.8,
-  },
-  {
-    id: "inc2",
-    title: "Cox's Bazar Cyclone",
-    district: "Cox's Bazar",
-    lat: 21.4,
-    lng: 92.0,
-  },
-];
+const DisasterReport = require("../models/disasterReport");
 
 // most severe check first so the boundaries (30, 50, 1, 5) fall on the right side
 function getRecommendation(wind, precip) {
@@ -38,8 +19,27 @@ function describeCondition(wind, precip) {
 }
 
 exports.getIncidents = async (req, res) => {
-  // mock until M1 is ready - swap the source line above, controller stays the same
-  res.json(MOCK_INCIDENTS);
+  try {
+    const reports = await DisasterReport.find({
+      status: { $regex: /^verified$/i },
+      latitude: { $ne: null },
+      longitude: { $ne: null },
+    }).select("crisisType district subdistrict latitude longitude");
+
+    const incidents = reports.map((r) => ({
+      id: r._id,
+      title: `${r.crisisType} - ${r.subdistrict}, ${r.district}`,
+      district: r.district,
+      lat: r.latitude,
+      lng: r.longitude,
+    }));
+
+    res.json(incidents);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Failed to load incidents", detail: err.message });
+  }
 };
 
 exports.queryWeather = async (req, res) => {

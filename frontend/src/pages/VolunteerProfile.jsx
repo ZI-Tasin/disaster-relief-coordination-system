@@ -5,12 +5,8 @@ import FormInput from "../components/FormInput";
 import FormSelect from "../components/FormSelect";
 import SkillChip from "../components/SkillChip";
 import api from "../api/axios";
-import {
-  bangladeshDistricts,
-  bloodTypes,
-  skillOptions,
-} from "../data/mockData";
-import { mockMissions } from "../data/mockMissions";
+import { bloodTypes, skillOptions } from "../data/mockData";
+import useDistricts from "../hooks/useDistricts";
 
 // colors for the mission status pills -- add more here if new statuses show up later
 const statusStyles = {
@@ -30,6 +26,8 @@ export default function VolunteerProfile() {
   const [isSaving, setIsSaving] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [missionHistory, setMissionHistory] = useState([]);
+
+  const { districtGroups } = useDistricts();
 
   // pull "my" profile on mount -- backend figures out who "my" is from the JWT
   useEffect(() => {
@@ -248,7 +246,7 @@ export default function VolunteerProfile() {
                 value={form.district}
                 onChange={(v) => setForm({ ...form, district: v })}
                 placeholder="Select a district"
-                groups={bangladeshDistricts}
+                groups={districtGroups}
               />
             </div>
 
