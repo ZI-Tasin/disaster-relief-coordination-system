@@ -72,7 +72,8 @@ export default function UpdateShelterModal({
             <div>
               <div className="flex justify-between items-center border-b border-slate-200 pb-2 mb-3">
                 <h3 className="font-bold text-slate-800 text-sm">Update Supply Needs</h3>
-                <button 
+                <button
+                  disabled={formData.criticalSupplies.every(sup => sup.status === 'ADEQUATE')}
                   type="button" 
                   onClick={onMarkAllAdequate}
                   className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition"

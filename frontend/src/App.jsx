@@ -44,12 +44,14 @@ import TaskAssignmentBoard from "./pages/admin/TaskAssignmentBoard";
 import ShelterDirectoryPage from "./pages/ShelterDirectoryPage";
 import AdminShelterManagement from "./pages/admin/AdminShelterManagement";
 import CrisisAnalyticsDashboard from "./pages/admin/CrisisAnalyticsDashboard";
+import moviePage from "./pages/moviePage.jsx";
 
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+           <Route path="/movie" element={<moviePage />} />
           <Route path="/login" element={<Login />} />
 
           <Route path="/signup" element={<Signup />} />

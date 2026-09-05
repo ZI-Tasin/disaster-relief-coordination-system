@@ -64,6 +64,7 @@ app.use("/api/notifications", require("./routes/notificationRoutes"));
 
 app.use("/api/sms", smsRoutes);
 
+app.use('/api/movies', require('./routes/movieRoutes'));
 // =====================================================
 // MODULE 3
 // CAMPAIGN ANALYTICS
